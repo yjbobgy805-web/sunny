@@ -1,0 +1,681 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>문구 작성기</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,"Malgun Gothic",sans-serif;background:#f5f7fa;color:#222;overflow:hidden}
+header{background:#1f4e78;color:#fff;padding:14px 20px;display:flex;align-items:center;gap:16px;height:58px}h1{font-size:20px;margin:0}
+button{cursor:pointer}.topbtn,.toolbar button{border:1px solid #cbd3dc;background:#fff;border-radius:7px;padding:8px 11px}
+.wrap{display:flex;gap:0;padding:14px;height:calc(100vh - 58px);min-width:0;width:100%}.pane{min-width:120px;min-height:0;height:100%}.pane-cat{width:180px;flex-shrink:0}.pane-mid{flex:1;min-width:200px}.pane-result{width:420px;flex-shrink:0}.splitter{width:8px;flex:0 0 8px;cursor:col-resize;position:relative}.splitter:after{content:"";position:absolute;left:3px;top:45%;height:42px;width:2px;background:#c7cfd8;border-radius:2px}.splitter:hover:after{background:#1f4e78}
+.panel{background:#fff;border:1px solid #d9dee5;border-radius:10px;overflow:hidden;min-height:0;height:100%;display:flex;flex-direction:column}
+.panel h2{font-size:15px;margin:0;padding:12px 14px;border-bottom:1px solid #e5e8ec;background:#fafbfc;flex-shrink:0}
+.search{padding:10px;border-bottom:1px solid #e5e8ec;flex-shrink:0}.search input{width:100%;padding:10px;border:1px solid #cfd6df;border-radius:7px}
+.scroll{overflow:auto;flex:1}.cat{padding:11px 14px;font-weight:700;border-bottom:1px solid #eee;cursor:pointer}.cat:hover,.cat.active{background:#eef5fb;color:#1f4e78}
+.item{display:flex;gap:8px;padding:10px 12px;border-bottom:1px solid #eee}.item button{flex:1;text-align:left;border:1px solid #d5dce4;background:#fff;border-radius:7px;padding:9px}.item button:hover{background:#eef6ff}
+.tag{font-size:11px;color:#777;min-width:70px;padding-top:10px}.toolbar{display:flex;gap:7px;padding:10px;border-bottom:1px solid #e5e8ec;flex-shrink:0}
+
+.panel.result{display:flex;flex-direction:column}
+.panel.result textarea{width:100%;flex:1;border:0;padding:15px;font-size:15px;line-height:1.7;resize:none;outline:0}
+
+#admin{display:none;position:fixed;background:#fff;border:1px solid #aaa;border-radius:12px;z-index:99999;padding:18px;box-shadow:0 10px 40px #0002;overflow:hidden;left:50%;top:50%;transform:translate(-50%,-50%);width:min(1100px,92vw);height:min(760px,88vh);min-width:620px;min-height:420px;max-width:96vw;max-height:94vh;resize:both}
+#phraseTableWrap{height:calc(100% - 160px);overflow:auto;border:1px solid #d5dce4;border-radius:8px}
+#phraseTable {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  min-width: 800px;
+  font-size: 13px;
+}
+
+#phraseTable th {
+  position: sticky;
+  top: 0;
+  background: #f3f6f9;
+  border-bottom: 1px solid #ccd5df;
+  padding: 8px;
+  text-align: left;
+  z-index: 1;
+}
+
+#phraseTable td {
+  border-bottom: 1px solid #e7ebef;
+  padding: 6px;
+  vertical-align: top;
+}
+
+#phraseTable th:nth-child(1), #phraseTable td:nth-child(1) { width: 100px; }
+#phraseTable th:nth-child(2), #phraseTable td:nth-child(2) { width: 100px; }
+#phraseTable th:nth-child(3), #phraseTable td:nth-child(3) { width: 140px; }
+#phraseTable th:nth-child(4), #phraseTable td:nth-child(4) { width: auto; }
+#phraseTable th:nth-child(5), #phraseTable td:nth-child(5) { width: 100px; }
+#phraseTable th:nth-child(6), #phraseTable td:nth-child(6) { width: 75px; text-align: center; }
+#phraseTable th:nth-child(7), #phraseTable td:nth-child(7) { width: 55px; text-align: center; }
+
+#phraseTable input,
+#phraseTable select {
+  width: 100%;
+  border: 1px solid #ccd5df;
+  border-radius: 5px;
+  padding: 6px;
+  font: inherit;
+}
+
+#phraseTable textarea {
+  width: 100%;
+  min-height: 75px;
+  border: 1px solid #ccd5df;
+  border-radius: 5px;
+  padding: 6px;
+  font: inherit;
+  resize: vertical;
+}
+.delbtn{border:1px solid #e0b6b6;background:#fff5f5;border-radius:5px;padding:6px;cursor:pointer}
+.movebtn{border:1px solid #cbd3dc;background:#f8fafc;border-radius:4px;padding:4px 6px;font-size:11px;cursor:pointer}
+.movebtn:hover{background:#e2e8f0}
+.hint{font-size:12px;color:#666;margin:6px 0 10px}.saveok{color:#176b3a;font-size:12px;margin-left:8px}
+.adminbar{display:flex;gap:8px;margin-bottom:8px}.adminbar input{padding:8px;border:1px solid #ccc;border-radius:6px}
+.small{font-size:12px;color:#dcecff}
+
+.admin-cat-filter {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.admin-cat-filter button {
+  border: 1px solid #cbd3dc;
+  background: #f8fafc;
+  color: #333;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.admin-cat-filter button.active {
+  background: #1f4e78;
+  color: #fff;
+  border-color: #1f4e78;
+  font-weight: bold;
+}
+
+/* 선택 팝업 UI (상단 중앙 배치) */
+#choiceModal {
+  display: none;
+  position: fixed;
+  top: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ffffff;
+  border: 2px solid #1f4e78;
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+  z-index: 100000;
+  text-align: center;
+  min-width: 300px;
+}
+#choiceModal h3 {
+  margin: 0 0 15px 0;
+  font-size: 16px;
+  color: #1f4e78;
+}
+.choice-btns {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.choice-btns button {
+  flex: 1;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: bold;
+  background: #1f4e78;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+.choice-btns button:hover {
+  background: #143552;
+}
+
+@media(max-width:768px){
+  .pane-cat{width:130px}
+  .pane-result{width:280px}
+}
+
+#admin .admin-dragbar{
+  cursor:move;
+  user-select:none;
+  touch-action:none;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:4px 0 8px;
+}
+#admin .admin-dragbar .draghint{
+  font-size:12px;
+  opacity:.65;
+}
+</style></head>
+<body>
+<script>
+(function checkAppAuth(){
+    const APP_PASSWORD = "4275";
+    let pwd = prompt("접속 비밀번호를 입력하세요:");
+    if(pwd !== APP_PASSWORD){
+        alert("비밀번호가 올바르지 않습니다.");
+        document.write("<div style='text-align:center;margin-top:100px;'><h2>🔒 인증 실패</h2><p>올바른 비밀번호를 입력해야 사용할 수 있습니다.<br>페이지를 새로고침(F5)하여 다시 시도하세요.</p></div>");
+        window.stop();
+    }
+})();
+</script>
+
+<header><h1>결과 문구 작성기</h1><button class="topbtn" onclick="openAdmin()">⚙ 문구 관리</button><span class="small">버튼 클릭 → 결과에 추가 · 전체 복사</span></header>
+<div class="wrap" id="layoutWrap">
+<section class="pane pane-cat" id="paneCat"><div class="panel"><h2>검사 항목</h2><div class="search"><input id="search" placeholder="문구 검색..." oninput="render()"></div><div id="categories" class="scroll"></div></div></section>
+<div class="splitter" id="split1" title="드래그해서 폭 조절"></div>
+<section class="pane pane-mid" id="paneMid"><div class="panel"><h2 id="middleTitle">문구 선택</h2><div id="items" class="scroll"></div></div></section>
+<div class="splitter" id="split2" title="드래그해서 폭 조절"></div>
+<section class="pane pane-result" id="paneResult"><div class="panel result"><h2>결과지</h2><div class="toolbar"><button onclick="copyResult()">전체 복사</button><button onclick="clearResult()">전체 삭제</button><button onclick="addLine()">직접 입력</button></div><textarea id="result" placeholder="선택한 문구가 여기에 추가됩니다. (# : 1. 2. / @ : 1) 2) 로 자동 번호 변환)" oninput="reformatNumbers()"></textarea></div></section>
+</div>
+
+<!-- 상단 중앙 선택 팝업 모달 -->
+<div id="choiceModal">
+  <h3 id="choiceModalTitle">위치를 선택하세요</h3>
+  <div class="choice-btns" id="choiceBtnContainer"></div>
+</div>
+
+<div id="admin">
+  <div class="admin-dragbar" id="adminDragBar">
+    <h2 style="margin:0">문구 관리</h2>
+    <span class="draghint">⋮⋮ 드래그하여 이동</span>
+  </div>
+  <div class="adminbar">
+    <button class="topbtn" onclick="newItem()">＋ 새 문구</button>
+    <button class="topbtn" onclick="saveTable()">저장</button>
+    <button class="topbtn" onclick="closeAdmin()">닫기</button>
+    <span id="saveMsg" class="saveok"></span>
+  </div>
+  <div id="adminCatFilter" class="admin-cat-filter"></div>
+  <div class="hint">순서를 변경하려면 <b>▲ / ▼</b> 버튼을 이용하세요. 변경 후 반드시 <b>저장</b> 버튼을 눌러주셔야 반영됩니다.</div>
+  <div id="phraseTableWrap">
+    <table id="phraseTable">
+      <thead><tr><th>분류</th><th>세부항목</th><th>버튼명</th><th>결과문구</th><th>입력항목</th><th>순서</th><th>삭제</th></tr></thead>
+      <tbody id="phraseRows"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const CATEGORY_ORDER = [
+  "복부", "유방", "갑상선", "경동맥", "자궁", "전립선", "방광", "복부대동맥", "종검", "히스토리/의사"
+];
+
+const DEFAULT_DATA=[
+{category:"복부",group:"간",label:"지방간",text:"<복부> 지방간"},
+{category:"복부",group:"간",label:"경도-중등도 지방간 의심",text:"<복부> 지방간"},
+{category:"복부",group:"간",label:"지도상 지방간",text:"<복부> 지방간"},
+{category:"복부",group:"간",label:"Focal fat sparing",text:"<복부> 간- FFS({크기}cm-{위치})",prompt:["크기","위치"]},
+{category:"복부",group:"간",label:"focal fat infiltration",text:"<복부> 간- 국소지방침윤({크기}cm)",prompt:["크기"]},
+{category:"복부",group:"간",label:"간혈관종 의심",text:"<복부> 간혈관종({크기}cm)",prompt:["크기"]},
+{category:"복부",group:"간",label:"간경변 의심",text:"<복부> 간경변"},
+{category:"복부",group:"간",label:"간이식",text:"간 이식 공여자이며 담낭절제술을 받은 상태로, 관찰된 범위에 이상 소견은 관찰되지 않았습니다."},
+{category:"복부",group:"간",label:"간 좌엽 낭종",text:"<복부> 간 좌엽- 낭종({크기}cm)",prompt:["크기"]},
+{category:"복부",group:"간",label:"간 우엽 혈관종",text:"<복부> 간 우엽- 혈관종이 의심되는 고에코결절({크기}cm)",prompt:["크기"]},
+{category:"복부",group:"간",label:"간 우엽 복합에코결절",text:"<복부> 간 우엽- 복합에코결절({크기}cm)",prompt:["크기"]},
+{category:"복부",group:"담낭",label:"담낭절제술",text:"<복부> 담낭절제술을 받은 상태"},
+{category:"복부",group:"담낭",label:"담낭 용종",text:"<복부> 담낭용종({크기}cm)",prompt:["크기"]},
+{category:"복부",group:"담낭",label:"담낭 선근종증",text:"<복부> 담낭 선근종증"},
+{category:"복부",group:"담낭",label:"담낭저부 국소 벽비후",text:"<복부> 담낭저부 국소 담낭벽비후({크기}cm)",prompt:["크기"]},
+{category:"복부",group:"담낭",label:"분절형 담낭선근종증",text:"<복부> 분절형 담낭선근종증({크기}cm)",prompt:["크기"]},
+{category:"복부",group:"담낭",label:"담낭 앙금(sludge)",text:"<복부> 담낭 앙금(sludge)({크기}cm)- 움직임[+]",prompt:["크기"]},
+{category:"복부",group:"담낭",label:"담낭벽 경한 비후",text:"<복부> 담낭벽 경한 비후({크기}cm)",prompt:["크기"]},
+{category:"복부",group:"담도",label:"총담관 경계성 확장",text:"<복부> 총담관 경계성 확장({크기}cm)",prompt:["크기"]},
+{category:"복부",group:"담도",label:"간내담관·총담관 확장",text:"<복부> 간내 담관 확장({크기1}cm), 총담관 확장({크기2}cm)",prompt:["크기1","크기2"]},
+{category:"복부",group:"췌장/췌관",label:"췌장 낭성 병변",text:"<복부> 췌장 두부/체부/미부 낭성 병변({크기}cm) rec) Abd CT",prompt:["크기"]},
+{category:"복부",group:"췌장/췌관",label:"주췌관 경한 확장",text:"<복부> 주췌관(MPD) 경한 확장({크기}cm)",prompt:["크기"]},
+{category:"복부",group:"신장",label:"우측 신장 AML",text:"<복부> 우측신장- 혈관근육지방종(AML)({크기}cm)",prompt:["크기"]},
+{category:"복부",group:"신장",label:"우측 수신증",text:"<복부> 우측신장- 경한 수신증"},
+{category:"복부",group:"신장",label:"양측 신장 위축",text:"<복부> 양측신장- 만성 신부전 의심"},
+{category:"복부",group:"신장",label:"마제신",text:"<복부> 양측신장- 마제신(horse-shoe kidney)"},
+{category:"복부",group:"신장",label:"골반신",text:"<복부> 우측신장- 골반신(intrapelvic kidney)"},
+{category:"복부",group:"신장",label:"신장이식",text:"<복부> 신장이식을 받은 상태로 좌측 신장은 보이지 않습니다."},
+{category:"복부",group:"신장",label:"낙타봉",text:"<복부> 신장- 낙타봉(Dromedary hump)"},
+{category:"복부",group:"신장",label:"신피질 얇음/에코 증가",text:"<복부> 신장- 실질 에코 레벨상승"},
+{category:"복부",group:"비장",label:"다발성 석회화",text:"<복부> 비장- 다발성 석회화"},
+{category:"복부",group:"비장",label:"부비장",text:"<복부> 비장- 부비장({크기}cm)",prompt:["크기"]},
+{category:"복부",group:"비장",label:"비장 종대",text:"<복부> 비장 종대({크기}cm)",prompt:["크기"]},
+{category:"유방",group:"유방",label:"정상",text:"<유방> 정상"},
+{category:"유방",group:"유방",label:"우측 낭종",text:"# <유방> 우측- 낭종({크기}cm)",prompt:["크기"]},
+{category:"유방",group:"유방",label:"좌측 낭종",text:"# <유방> 좌측- 낭종({크기}cm)",prompt:["크기"]},
+{category:"유방",group:"유방",label:"지방소엽",text:"<유방> 지방소엽({크기}cm-{위치})",prompt:["크기","위치"]},
+{category:"갑상선",group:"갑상선",label:"정상",text:"<갑상선> 정상"},
+{category:"갑상선",group:"갑상선",label:"복합 에코결절(다발성)",text:"<갑상선> 복합 에코결절(최대: {max}cm) ({sizes})",prompt:["sizes"]},
+{category:"갑상선",group:"갑상선",label:"낭성 병변(다발성)",text:"<갑상선> 낭성 병변(최대: {max}cm) ({sizes})",prompt:["sizes"]},
+{category:"갑상선",group:"갑상선",label:"결절(다발성)",text:"<갑상선> 결절(최대: {max}cm) ({sizes})",prompt:["sizes"]},
+{category:"갑상선",group:"갑상선",label:"우엽 미세낭종",text:"<갑상선> 우엽-미세낭종"},
+{category:"갑상선",group:"갑상선",label:"좌엽 미세낭종",text:"<갑상선> 좌엽-미세낭종"},
+{category:"갑상선",group:"갑상선",label:"양엽 미세낭종",text:"<갑상선> 양엽-미세낭종"},
+{category:"갑상선",group:"갑상선",label:"비균질에코",text:"<갑상선> 비균질에코"},
+{category:"경동맥",group:"경동맥",label:"정상",text:"<경동맥> 정상"},
+{category:"자궁",group:"자궁",label:"정상",text:"<자궁> 정상"},
+{category:"자궁",group:"자궁",label:"난소낭종",text:"<자궁> {btn:우측|좌측|양측} 난소 낭종({크기}cm)",prompt:["크기"]},
+{category:"전립선",group:"전립선",label:"정상",text:"<전립선> 정상"},
+{category:"전립선",group:"전립선",label:"용적",text:"<전립선> {용적}ml",prompt:["용적"]},
+{category:"방광",group:"방광",label:"정상",text:"<방광> 정상"},
+{category:"복부대동맥",group:"복부대동맥",label:"정상",text:"<복부대동맥> 정상"},
+{category:"종검",group:"종검",label:"정상",text:"<종검> 정상"},
+{category:"히스토리/의사",group:"히스토리/의사",label:"정상",text:"<히스토리/의사> 특이소견 없음"}
+];
+
+let data=JSON.parse(localStorage.getItem("usData")||"null")||DEFAULT_DATA,currentCategory="복부";
+let adminCategoryFilter="전체";
+
+function getOrderedCategories(dataList){
+    const presentCats = [...new Set(dataList.map(x => x.category))];
+    const ordered = CATEGORY_ORDER.filter(c => presentCats.includes(c));
+    const remain = presentCats.filter(c => !CATEGORY_ORDER.includes(c));
+    return [...ordered, ...remain];
+}
+
+function render(){
+    let q=document.getElementById("search").value.trim().toLowerCase();
+    let cats=getOrderedCategories(data);
+    
+    if(!cats.includes(currentCategory) && cats.length > 0){
+        currentCategory = cats[0];
+    }
+
+    document.getElementById("categories").innerHTML=cats.map(c=>`
+        <div class="cat ${c===currentCategory && !q ? 'active' : ''}" onclick="selectCat('${esc(c)}')">${esc(c)}</div>
+    `).join("");
+
+    let items=data.filter(x=>(!q?x.category===currentCategory:true)&&(!q||(x.label+x.text+x.group+x.category).toLowerCase().includes(q)));
+    document.getElementById("middleTitle").textContent=q?"검색 결과":currentCategory+" 문구";
+    document.getElementById("items").innerHTML=items.map(x=>`<div class="item"><span class="tag">${esc(x.group)}</span><button onclick="useItem(${data.indexOf(x)})">${esc(x.label)}</button></div>`).join("")||'<div style="padding:20px;color:#777">검색 결과가 없습니다.</div>';
+}
+
+function selectCat(c){currentCategory=c;document.getElementById("search").value="";render()}
+
+function getTodayDate(){
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2,"0");
+    const day = String(d.getDate()).padStart(2,"0");
+    return `${y}-${m}-${day}`;
+}
+
+function reformatNumbers(){
+    let r = document.getElementById("result");
+    let lines = r.value.split("\n");
+    let mainIdx = 0;
+    let subIdx = 0;
+
+    let newLines = lines.map(line => {
+        let tempLine = line.replace(/^\s*\d+\.\s*/, "# ").replace(/^\s*\d+\)\s*/, "@ ");
+
+        if(tempLine.trim().startsWith("#")){
+            mainIdx++;
+            subIdx = 0;
+            return tempLine.trim().replace(/^#\s*/, mainIdx + ". ");
+        } 
+        else if(tempLine.trim().startsWith("@")){
+            subIdx++;
+            return tempLine.trim().replace(/^@\s*/, "  " + subIdx + ") ");
+        }
+        return line;
+    });
+
+    r.value = newLines.join("\n");
+}
+
+/* 상단 중앙 모달창 형태의 버튼 선택 함수 */
+function askChoiceModal(options) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById("choiceModal");
+        const container = document.getElementById("choiceBtnContainer");
+        container.innerHTML = "";
+
+        options.forEach(opt => {
+            const btn = document.createElement("button");
+            btn.textContent = opt;
+            btn.onclick = () => {
+                modal.style.display = "none";
+                resolve(opt);
+            };
+            container.appendChild(btn);
+        });
+
+        modal.style.display = "block";
+    });
+}
+
+async function useItem(i){
+    let x = data[i];
+    let t = x.text;
+
+    t = t.replaceAll("[todaydate]", getTodayDate());
+
+    // {btn:우측|좌측|양측} 형태 패턴 처리 (상단 중앙 버튼 선택창)
+    const btnMatch = t.match(/\{btn:([^}]+)\}/);
+    if(btnMatch) {
+        const options = btnMatch[1].split("|");
+        const selected = await askChoiceModal(options);
+        t = t.replace(btnMatch[0], selected);
+    }
+
+    if(x.prompt){
+        if(x.prompt.includes("sizes")){
+            let rawInput = prompt("크기들을 쉼표(,)로 구분하여 입력하세요.\n예: 0.23, 0.29, 0.64");
+            if(rawInput === null) return;
+
+            let sizeArray = rawInput.split(',')
+                                     .map(s => s.trim())
+                                     .filter(s => s.length > 0);
+
+            if(sizeArray.length > 0){
+                let numericSizes = sizeArray.map(s => parseFloat(s)).filter(n => !isNaN(n));
+                let maxSize = numericSizes.length > 0 ? Math.max(...numericSizes) : '';
+                let formattedList = sizeArray.map(s => s.endsWith('cm') ? s : s + 'cm').join(', ');
+
+                t = t.replaceAll("{max}", maxSize)
+                     .replaceAll("{sizes}", formattedList);
+            } else {
+                t = t.replaceAll("{max}", "").replaceAll("{sizes}", "");
+            }
+        } else {
+            for(const p of x.prompt){
+                let v = prompt(p + " 입력");
+                if(v === null) return;
+                t = t.replaceAll("{" + p + "}", v);
+            }
+        }
+    }
+
+    let r = document.getElementById("result");
+    let startPos = r.selectionStart;
+    let endPos = r.selectionEnd;
+
+    if(startPos || startPos === 0){
+        let prefix = r.value.substring(0, startPos);
+        let suffix = r.value.substring(endPos, r.value.length);
+
+        if(prefix.length > 0 && !prefix.endsWith("\n")){
+            prefix += "\n";
+        }
+        if(suffix.length > 0 && !suffix.startsWith("\n")){
+            suffix = "\n" + suffix;
+        }
+
+        r.value = prefix + t + suffix;
+    } else {
+        r.value += (r.value ? "\n" : "") + t;
+    }
+
+    reformatNumbers();
+
+    r.focus();
+    navigator.clipboard.writeText(t);
+}
+
+function copyResult(){navigator.clipboard.writeText(document.getElementById("result").value)}
+function clearResult(){document.getElementById("result").value=""}
+function addLine(){
+    let s=prompt("직접 입력할 문구 (# 또는 @를 붙이면 자동 번호 생성)");
+    if(s){
+        let r=document.getElementById("result");
+        r.value+=(r.value?"\n":"")+s;
+        reformatNumbers();
+    }
+}
+
+function openAdmin(){
+    document.getElementById("admin").style.display="block";
+    renderTable();
+}
+
+function closeAdmin(){document.getElementById("admin").style.display="none"}
+
+function filterAdminCat(c){
+    data = readTable();
+    adminCategoryFilter = c;
+    renderTable();
+}
+
+function renderTable(){
+    const filterBox = document.getElementById("adminCatFilter");
+    const cats = ["전체", ...getOrderedCategories(data)];
+    
+    filterBox.innerHTML = cats.map(c => {
+        let count = (c === "전체") ? data.length : data.filter(x => x.category === c).length;
+        return `<button type="button" class="${c === adminCategoryFilter ? 'active' : ''}" onclick="filterAdminCat('${esc(c)}')">${esc(c)} (${count})</button>`;
+    }).join("");
+
+    const tbody = document.getElementById("phraseRows");
+    
+    let html = "";
+    data.forEach((x, i) => {
+        if(adminCategoryFilter !== "전체" && x.category !== adminCategoryFilter) return;
+        
+        html += `
+        <tr data-i="${i}">
+            <td><input data-k="category" value="${esc(x.category||"")}"></td>
+            <td><input data-k="group" value="${esc(x.group||"")}"></td>
+            <td><input data-k="label" value="${esc(x.label||"")}"></td>
+            <td><textarea data-k="text">${esc(x.text||"")}</textarea></td>
+            <td><input data-k="prompt" value="${esc((x.prompt||[]).join(", "))}" placeholder="크기, 위치 또는 sizes"></td>
+            <td style="text-align:center">
+                <button class="movebtn" type="button" onclick="moveItem(${i}, -1)">▲</button>
+                <button class="movebtn" type="button" onclick="moveItem(${i}, 1)">▼</button>
+            </td>
+            <td><button class="delbtn" type="button" onclick="deleteItem(${i})">삭제</button></td>
+        </tr>`;
+    });
+    
+    tbody.innerHTML = html;
+}
+
+function readTable(){
+    let newData = [...data];
+    document.querySelectorAll("#phraseRows tr").forEach(tr => {
+        const i = parseInt(tr.dataset.i);
+        if (isNaN(i) || i < 0 || i >= newData.length) return;
+        const o = {};
+        tr.querySelectorAll("[data-k]").forEach(el => o[el.dataset.k] = el.value);
+        o.prompt = o.prompt ? o.prompt.split(",").map(v => v.trim()).filter(Boolean) : [];
+        if(!o.prompt.length) delete o.prompt;
+        newData[i] = o;
+    });
+    return newData;
+}
+
+function moveItem(index, direction){
+    data = readTable();
+
+    if (adminCategoryFilter === "전체") {
+        const targetIndex = index + direction;
+        if(targetIndex < 0 || targetIndex >= data.length) return;
+        
+        const temp = data[index];
+        data[index] = data[targetIndex];
+        data[targetIndex] = temp;
+    } else {
+        const filteredIndices = [];
+        data.forEach((x, idx) => {
+            if (x.category === adminCategoryFilter) filteredIndices.push(idx);
+        });
+
+        const currentFilteredPos = filteredIndices.indexOf(index);
+        if (currentFilteredPos === -1) return;
+
+        const targetFilteredPos = currentFilteredPos + direction;
+        if (targetFilteredPos < 0 || targetFilteredPos >= filteredIndices.length) return;
+
+        const targetIndex = filteredIndices[targetFilteredPos];
+
+        const temp = data[index];
+        data[index] = data[targetIndex];
+        data[targetIndex] = temp;
+    }
+    
+    renderTable();
+}
+
+function saveTable(){
+    data=readTable();
+    localStorage.setItem("usData",JSON.stringify(data));
+    render();
+    document.getElementById("saveMsg").textContent="저장되었습니다";
+    setTimeout(()=>document.getElementById("saveMsg").textContent="",1500)
+}
+
+function deleteItem(i){
+    if(confirm("이 문구를 삭제할까요?")){
+        data = readTable();
+        data.splice(i,1);
+        renderTable();
+    }
+}
+
+function newItem(){
+    data = readTable();
+    let defaultCat = (adminCategoryFilter !== "전체") ? adminCategoryFilter : "복부";
+    data.push({category: defaultCat, group: "", label: "", text: ""});
+    renderTable();
+    setTimeout(() => {
+        const box = document.getElementById("phraseTableWrap");
+        box.scrollTop = box.scrollHeight;
+    }, 50);
+}
+
+function esc(s){return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll("'","&#39;").replaceAll('"',"&quot;")}
+
+function saveLayout(){localStorage.setItem("usLayout",JSON.stringify({cat:document.getElementById("paneCat").style.width,result:document.getElementById("paneResult").style.width}))}
+function loadLayout(){try{const x=JSON.parse(localStorage.getItem("usLayout")||"null");if(x){if(x.cat)document.getElementById("paneCat").style.width=x.cat;if(x.result)document.getElementById("paneResult").style.width=x.result}}catch(e){}}
+
+function setupSplitter(id,leftId,rightId){
+  const sp=document.getElementById(id);
+  let dragging=false;
+  sp.addEventListener("pointerdown",e=>{dragging=true;sp.setPointerCapture(e.pointerId);document.body.style.cursor="col-resize";document.body.style.userSelect="none"});
+  sp.addEventListener("pointermove",e=>{
+    if(!dragging)return;
+    const wrap=document.getElementById("layoutWrap").getBoundingClientRect();
+    if(id==="split1"){
+      const leftW=Math.max(120,Math.min(e.clientX-wrap.left,wrap.width-400));
+      document.getElementById(leftId).style.width=leftW+"px";
+    }else{
+      const rightW=Math.max(200,Math.min(wrap.right-e.clientX,wrap.width-400));
+      document.getElementById(rightId).style.width=rightW+"px";
+    }
+    saveLayout();
+  });
+  sp.addEventListener("pointerup",()=>{dragging=false;document.body.style.cursor="";document.body.style.userSelect=""});
+  sp.addEventListener("pointercancel",()=>{dragging=false;document.body.style.cursor="";document.body.style.userSelect=""});
+}
+
+loadLayout();
+setupSplitter("split1","paneCat","paneMid");
+setupSplitter("split2","paneMid","paneResult");
+
+render();
+
+document.addEventListener("keydown", function(e){
+    const activeEl = document.activeElement;
+    const isEditing = activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA");
+
+    if (isEditing) return;
+
+    if(e.ctrlKey && e.key.toLowerCase()==="z"){
+        e.preventDefault();
+        copyResult();
+    }
+    if(e.ctrlKey && e.key.toLowerCase()==="d"){
+        e.preventDefault();
+        clearResult();
+    }
+});
+</script>
+<script>
+(function(){
+  const KEY="usAdminPanelGeometryV2";
+  let drag={on:false,x:0,y:0,left:0,top:0};
+
+  function init(){
+    const admin=document.getElementById("admin");
+    const bar=document.getElementById("adminDragBar");
+    if(!admin || !bar || admin.dataset.geometryReady) return;
+    admin.dataset.geometryReady="1";
+
+    function save(){
+      const r=admin.getBoundingClientRect();
+      localStorage.setItem(KEY,JSON.stringify({
+        left:r.left,top:r.top,width:r.width,height:r.height
+      }));
+    }
+
+    function restore(){
+      try{
+        const g=JSON.parse(localStorage.getItem(KEY)||"null");
+        if(!g) return;
+        admin.style.transform="none";
+        admin.style.left=Math.max(0,Math.min(g.left,innerWidth-g.width))+"px";
+        admin.style.top=Math.max(0,Math.min(g.top,innerHeight-g.height))+"px";
+        admin.style.width=Math.min(g.width,innerWidth*.96)+"px";
+        admin.style.height=Math.min(g.height,innerHeight*.94)+"px";
+      }catch(e){}
+    }
+
+    bar.addEventListener("mousedown",function(e){
+      if(e.button!==0) return;
+      drag.on=true;
+      admin.style.transform="none";
+      const r=admin.getBoundingClientRect();
+      drag.x=e.clientX; drag.y=e.clientY;
+      drag.left=r.left; drag.top=r.top;
+      e.preventDefault();
+    });
+
+    document.addEventListener("mousemove",function(e){
+      if(!drag.on) return;
+      const r=admin.getBoundingClientRect();
+      admin.style.left=Math.max(0,Math.min(innerWidth-r.width,drag.left+e.clientX-drag.x))+"px";
+      admin.style.top=Math.max(0,Math.min(innerHeight-r.height,drag.top+e.clientY-drag.y))+"px";
+    });
+
+    document.addEventListener("mouseup",function(){
+      if(drag.on){drag.on=false;save();}
+    });
+
+    window.addEventListener("resize",function(){
+      const r=admin.getBoundingClientRect();
+      if(r.right>innerWidth) admin.style.left=Math.max(0,innerWidth-r.width)+"px";
+      if(r.bottom>innerHeight) admin.style.top=Math.max(0,innerHeight-r.height)+"px";
+      save();
+    });
+
+    if(window.ResizeObserver){
+      new ResizeObserver(function(){
+        if(getComputedStyle(admin).display!=="none") save();
+      }).observe(admin);
+    }
+
+    window.restoreAdminGeometry=restore;
+  }
+
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init);
+  else init();
+
+  const oldOpen=window.openAdmin;
+  if(typeof oldOpen==="function"){
+    window.openAdmin=function(){
+      oldOpen.apply(this,arguments);
+      setTimeout(function(){
+        init();
+        if(window.restoreAdminGeometry) window.restoreAdminGeometry();
+      },30);
+    };
+  }
+})();
+</script>
+</body></html>
