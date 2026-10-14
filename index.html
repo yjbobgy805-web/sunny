@@ -173,7 +173,6 @@ button{cursor:pointer}.topbtn,.toolbar button{border:1px solid #cbd3dc;backgroun
   font-size:12px;
   opacity:.65;
 }
-
 /* 🔒 파이어베이스 로그인 오버레이 스타일 */
 #loginOverlay {
   position: fixed;
@@ -218,9 +217,6 @@ button{cursor:pointer}.topbtn,.toolbar button{border:1px solid #cbd3dc;backgroun
 
 </style></head>
 <body>
-  <body>
-
-<body>
 
 <!-- 🔒 파이어베이스 로그인 오버레이 HTML -->
 <div id="loginOverlay">
@@ -236,15 +232,10 @@ button{cursor:pointer}.topbtn,.toolbar button{border:1px solid #cbd3dc;backgroun
 
 
 
-
-
-<script>
-
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-    // 보내주신 실제 파이어베이스 설정값
     const firebaseConfig = {
       apiKey: "AIzaSyAW6qlM__brCBG-9lKuVCwguUDnjbcTmX8",
       authDomain: "hospital-web-958bc.firebaseapp.com",
@@ -257,7 +248,6 @@ button{cursor:pointer}.topbtn,.toolbar button{border:1px solid #cbd3dc;backgroun
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
-    // 로그인 버튼 누를 때 실행되는 함수
     window.firebaseLogin = function() {
         const email = document.getElementById('loginEmail').value;
         const password = document.getElementById('loginPassword').value;
@@ -266,7 +256,7 @@ button{cursor:pointer}.topbtn,.toolbar button{border:1px solid #cbd3dc;backgroun
         signInWithEmailAndPassword(auth, email, password)
             .then((userCredential) => {
                 document.getElementById("loginOverlay").style.display = "none";
-                initApp(); // 로그인 성공 시 메인 앱 실행!
+                initApp();
             })
             .catch((error) => {
                 errorMsg.style.display = "block";
@@ -275,7 +265,6 @@ button{cursor:pointer}.topbtn,.toolbar button{border:1px solid #cbd3dc;backgroun
             });
     };
 
-    // 새로고침해도 이미 로그인되어 있으면 바로 통과시켜주는 기능
     onAuthStateChanged(auth, (user) => {
         if (user) {
             document.getElementById("loginOverlay").style.display = "none";
@@ -288,6 +277,8 @@ button{cursor:pointer}.topbtn,.toolbar button{border:1px solid #cbd3dc;backgroun
         if(emailInput) emailInput.focus();
     };
 </script>
+
+
 
 <header><h1>결과 문구 작성기</h1><button class="topbtn" onclick="openAdmin()">⚙ 문구 관리</button><span class="small">버튼 클릭 → 결과에 추가 · 전체 복사</span></header>
 <div class="wrap" id="layoutWrap">
