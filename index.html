@@ -303,6 +303,7 @@ button{cursor:pointer}.topbtn,.toolbar button{border:1px solid #cbd3dc;backgroun
   <div class="adminbar">
     <button class="topbtn" onclick="newItem()">＋ 새 문구</button>
     <button class="topbtn" onclick="saveTable()">저장</button>
+    <button class="topbtn" onclick="backupDataFile()">문구 백업하기</button>
     <button class="topbtn" onclick="closeAdmin()">닫기</button>
     <span id="saveMsg" class="saveok"></span>
   </div>
@@ -768,6 +769,7 @@ document.addEventListener("keydown", function(e){
         clearResult();
     }
 });
+  
 </script>
 <script>
 (function(){
@@ -850,5 +852,16 @@ document.addEventListener("keydown", function(e){
     };
   }
 })();
+
+
+  function backupDataFile() {
+    const currentData = JSON.parse(localStorage.getItem("usData") || "null") || DEFAULT_DATA;
+    const blob = new Blob([JSON.stringify(currentData, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "phrase_backup.json";
+    a.click();
+}
 </script>
 </body></html>
