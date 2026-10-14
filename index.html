@@ -379,7 +379,37 @@ const DEFAULT_DATA=[
 {category:"히스토리/의사",group:"히스토리/의사",label:"정상",text:"<히스토리/의사> 특이소견 없음"}
 ];
 
-let data=JSON.parse(localStorage.getItem("usData")||"null")||DEFAULT_DATA,currentCategory="복부";
+let data = DEFAULT_DATA;
+let currentCategory = "복부";
+let adminCategoryFilter = "전체";
+
+// 1. 파이어베이스 Firestore에서 데이터 불러오기 함수
+async function loadDataFromFirestore() {
+    try {
+        if (window.db && window.doc && window.getDoc) {
+            const docRef = window.doc(window.db, "settings", "phraseData");
+            const docSnap = await window.getDoc(docRef);
+            if (docSnap.exists() && docSnap.data().items) {
+                data = docSnap.data().items;
+            } else {
+                data = DEFAULT_DATA;
+                await saveTableToFirestore();
+            }
+        }
+    } catch (e) {
+        console.error("데이터 로드 실패:", e);
+    }
+}
+
+// 2. 파이어베이스 Firestore에 데이터 저장하기 함수
+async function saveTableToFirestore() {
+    try {
+        const docRef = window.doc(window.db, "settings", "phraseData");
+        await window.setDoc(docRef, { items: data });
+    } catch (e) {
+        console.error("데이터 저장 실패:", e);
+    }
+}
 let adminCategoryFilter="전체";
 
 function getOrderedCategories(dataList){
@@ -693,14 +723,14 @@ function moveItem(index, direction){
     renderTable();
 }
 
-function saveTable(){
-    data=readTable();
-    localStorage.setItem("usData",JSON.stringify(data));
+async function saveTable(){
+    data = readTable();
+    await saveTableToFirestore(); // 👈 파이어베이스 클라우드 서버에 저장!
     render();
-    document.getElementById("saveMsg").textContent="저장되었습니다";
+    document.getElementById("saveMsg").textContent="클라우드 저장 완료!";
     setTimeout(()=>document.getElementById("saveMsg").textContent="",1500)
 }
-
+  
 function deleteItem(i){
     if(confirm("이 문구를 삭제할까요?")){
         data = readTable();
