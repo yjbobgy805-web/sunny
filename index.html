@@ -173,18 +173,120 @@ button{cursor:pointer}.topbtn,.toolbar button{border:1px solid #cbd3dc;backgroun
   font-size:12px;
   opacity:.65;
 }
+
+/* 🔒 파이어베이스 로그인 오버레이 스타일 */
+#loginOverlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: #1f4e78;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999999;
+}
+.login-box {
+  background: #fff;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  text-align: center;
+  width: 320px;
+}
+.login-box h2 { margin-top: 0; color: #1f4e78; font-size: 20px; }
+.login-box input {
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  text-align: center;
+}
+.login-box button {
+  width: 100%;
+  padding: 10px;
+  background: #1f4e78;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.login-box button:hover { background: #143552; }
+#loginError { color: #d9534f; font-size: 13px; margin-top: 10px; display: none; }
+
 </style></head>
 <body>
+  <body>
+
+<body>
+
+<!-- 🔒 파이어베이스 로그인 오버레이 HTML -->
+<div id="loginOverlay">
+  <div class="login-box">
+    <h2>🔒 병원 시스템 로그인</h2>
+    <p style="font-size:13px; color:#666;">파이어베이스 계정을 입력하세요</p>
+    <input type="email" id="loginEmail" placeholder="이메일 입력">
+    <input type="password" id="loginPassword" placeholder="비밀번호 입력" onkeydown="if(event.key==='Enter') firebaseLogin()">
+    <button onclick="firebaseLogin()">로그인</button>
+    <div id="loginError">아이디나 비밀번호가 올바르지 않습니다.</div>
+  </div>
+</div>
+
+
+
+
+
 <script>
-(function checkAppAuth(){
-    const APP_PASSWORD = "4275";
-    let pwd = prompt("접속 비밀번호를 입력하세요:");
-    if(pwd !== APP_PASSWORD){
-        alert("비밀번호가 올바르지 않습니다.");
-        document.write("<div style='text-align:center;margin-top:100px;'><h2>🔒 인증 실패</h2><p>올바른 비밀번호를 입력해야 사용할 수 있습니다.<br>페이지를 새로고침(F5)하여 다시 시도하세요.</p></div>");
-        window.stop();
-    }
-})();
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    // 보내주신 실제 파이어베이스 설정값
+    const firebaseConfig = {
+      apiKey: "AIzaSyAW6qlM__brCBG-9lKuVCwguUDnjbcTmX8",
+      authDomain: "hospital-web-958bc.firebaseapp.com",
+      projectId: "hospital-web-958bc",
+      storageBucket: "hospital-web-958bc.firebasestorage.app",
+      messagingSenderId: "453917371035",
+      appId: "1:453917371035:web:3af6156729ca9cb324b43e"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // 로그인 버튼 누를 때 실행되는 함수
+    window.firebaseLogin = function() {
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+        const errorMsg = document.getElementById('loginError');
+
+        signInWithEmailAndPassword(auth, email, password)
+            .then((userCredential) => {
+                document.getElementById("loginOverlay").style.display = "none";
+                initApp(); // 로그인 성공 시 메인 앱 실행!
+            })
+            .catch((error) => {
+                errorMsg.style.display = "block";
+                document.getElementById('loginPassword').value = "";
+                document.getElementById('loginPassword').focus();
+            });
+    };
+
+    // 새로고침해도 이미 로그인되어 있으면 바로 통과시켜주는 기능
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            document.getElementById("loginOverlay").style.display = "none";
+            initApp();
+        }
+    });
+
+    window.onload = function() {
+        const emailInput = document.getElementById('loginEmail');
+        if(emailInput) emailInput.focus();
+    };
 </script>
 
 <header><h1>결과 문구 작성기</h1><button class="topbtn" onclick="openAdmin()">⚙ 문구 관리</button><span class="small">버튼 클릭 → 결과에 추가 · 전체 복사</span></header>
@@ -651,11 +753,14 @@ function setupSplitter(id,leftId,rightId){
   sp.addEventListener("pointercancel",()=>{dragging=false;document.body.style.cursor="";document.body.style.userSelect=""});
 }
 
-loadLayout();
-setupSplitter("split1","paneCat","paneMid");
-setupSplitter("split2","paneMid","paneResult");
+// 기존 코드에 있던 함수들 밑이나 적당한 자리에 아래와 같이 넣어주세요
+function initApp(){
+    loadLayout();
+    setupSplitter("split1","paneCat","paneMid");
+    setupSplitter("split2","paneMid","paneResult");
+    render();
+}
 
-render();
 
 document.addEventListener("keydown", function(e){
     const activeEl = document.activeElement;
