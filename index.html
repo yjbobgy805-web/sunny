@@ -230,11 +230,10 @@ button{cursor:pointer}.topbtn,.toolbar button{border:1px solid #cbd3dc;backgroun
   </div>
 </div>
 
-
-
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAW6qlM__brCBG-9lKuVCwguUDnjbcTmX8",
@@ -247,6 +246,13 @@ button{cursor:pointer}.topbtn,.toolbar button{border:1px solid #cbd3dc;backgroun
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // 전역(window)으로 등록하여 일반 script 영역에서 쓸 수 있게 설정
+    window.db = db;
+    window.doc = doc;
+    window.getDoc = getDoc;
+    window.setDoc = setDoc;
 
     window.firebaseLogin = function() {
         const email = document.getElementById('loginEmail').value;
@@ -254,8 +260,11 @@ button{cursor:pointer}.topbtn,.toolbar button{border:1px solid #cbd3dc;backgroun
         const errorMsg = document.getElementById('loginError');
 
         signInWithEmailAndPassword(auth, email, password)
-            .then((userCredential) => {
+            .then(async (userCredential) => {
                 document.getElementById("loginOverlay").style.display = "none";
+                if (typeof loadDataFromFirestore === "function") {
+                    await loadDataFromFirestore();
+                }
                 initApp();
             })
             .catch((error) => {
@@ -265,9 +274,12 @@ button{cursor:pointer}.topbtn,.toolbar button{border:1px solid #cbd3dc;backgroun
             });
     };
 
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, async (user) => {
         if (user) {
             document.getElementById("loginOverlay").style.display = "none";
+            if (typeof loadDataFromFirestore === "function") {
+                await loadDataFromFirestore();
+            }
             initApp();
         }
     });
@@ -277,8 +289,6 @@ button{cursor:pointer}.topbtn,.toolbar button{border:1px solid #cbd3dc;backgroun
         if(emailInput) emailInput.focus();
     };
 </script>
-
-
 
 <header><h1>결과 문구 작성기</h1><button class="topbtn" onclick="openAdmin()">⚙ 문구 관리</button><span class="small">버튼 클릭 → 결과에 추가 · 전체 복사</span></header>
 <div class="wrap" id="layoutWrap">
@@ -304,8 +314,8 @@ button{cursor:pointer}.topbtn,.toolbar button{border:1px solid #cbd3dc;backgroun
     <button class="topbtn" onclick="newItem()">＋ 새 문구</button>
     <button class="topbtn" onclick="saveTable()">저장</button>
     <button class="topbtn" onclick="backupDataFile()">문구 백업하기</button>
-<button class="topbtn" onclick="document.getElementById('restoreFileInput').click()">백업 파일 불러오기</button>
-<input type="file" id="restoreFileInput" style="display:none" accept=".json" onchange="restoreDataFile(event)">
+    <button class="topbtn" onclick="document.getElementById('restoreFileInput').click()">백업 파일 불러오기</button>
+    <input type="file" id="restoreFileInput" style="display:none" accept=".json" onchange="restoreDataFile(event)">
     <button class="topbtn" onclick="closeAdmin()">닫기</button>
     <span id="saveMsg" class="saveok"></span>
   </div>
@@ -412,7 +422,6 @@ async function saveTableToFirestore() {
         console.error("데이터 저장 실패:", e);
     }
 }
-let adminCategoryFilter="전체";
 
 function getOrderedCategories(dataList){
     const presentCats = [...new Set(dataList.map(x => x.category))];
@@ -455,7 +464,6 @@ function reformatNumbers(){
     let subIdx = 0;
 
     const newLines = lines.map(line => {
-        // 들여쓰기 공백은 유지하고, 번호 표시용 # / @만 변환합니다.
         const mainMatch = line.match(/^(\s*)#\s*(.*)$/);
         const subMatch = line.match(/^(\s*)@\s*(.*)$/);
         const oldMain = line.match(/^(\s*)\d+\.\s*(.*)$/);
@@ -476,7 +484,6 @@ function reformatNumbers(){
     });
     r.value = newLines.join("\n");
 }
-
 
 /* 상단 중앙 모달창 형태의 버튼 선택 함수 */
 function askChoiceModal(options) {
@@ -505,7 +512,6 @@ async function useItem(i){
 
     t = t.replaceAll("[todaydate]", getTodayDate());
 
-    // {btn:우측|좌측|양측} 형태 패턴 처리 (상단 중앙 버튼 선택창)
     const btnMatch = t.match(/\{btn:([^}]+)\}/);
     if(btnMatch) {
         const options = btnMatch[1].split("|");
@@ -513,9 +519,7 @@ async function useItem(i){
         t = t.replace(btnMatch[0], selected);
     }
 
-// MR, TR, AR, PR 선택 기능 (중복 선택 방지)
 const valveMatch = t.match(/\{판막선택\}/);
-
 if (valveMatch) {
     const options = ["MR", "TR", "AR", "PR"];
     const selectedItems = [];
@@ -532,7 +536,6 @@ if (valveMatch) {
 
         btn.onclick = () => {
             const idx = selectedItems.indexOf(opt);
-
             if (idx === -1) {
                 selectedItems.push(opt);
                 btn.style.background = "#176b3a";
@@ -541,7 +544,6 @@ if (valveMatch) {
                 btn.style.background = "#1f4e78";
             }
         };
-
         container.appendChild(btn);
     });
 
@@ -551,10 +553,7 @@ if (valveMatch) {
 
     done.onclick = () => {
         modal.style.display = "none";
-        t = t.replace(
-            "{판막선택}",
-            selectedItems.join(", ")
-        );
+        t = t.replace("{판막선택}", selectedItems.join(", "));
         modal.dataset.valveDone = "1";
         modal.dispatchEvent(new Event("valvedone"));
     };
@@ -573,17 +572,14 @@ if (valveMatch) {
             let rawInput = prompt("크기들을 쉼표(,)로 구분하여 입력하세요.\n예: 0.23, 0.29, 0.64");
             if(rawInput === null) return;
 
-            let sizeArray = rawInput.split(',')
-                                     .map(s => s.trim())
-                                     .filter(s => s.length > 0);
+            let sizeArray = rawInput.split(',').map(s => s.trim()).filter(s => s.length > 0);
 
             if(sizeArray.length > 0){
                 let numericSizes = sizeArray.map(s => parseFloat(s)).filter(n => !isNaN(n));
                 let maxSize = numericSizes.length > 0 ? Math.max(...numericSizes) : '';
                 let formattedList = sizeArray.map(s => s.endsWith('cm') ? s : s + 'cm').join(', ');
 
-                t = t.replaceAll("{max}", maxSize)
-                     .replaceAll("{sizes}", formattedList);
+                t = t.replaceAll("{max}", maxSize).replaceAll("{sizes}", formattedList);
             } else {
                 t = t.replaceAll("{max}", "").replaceAll("{sizes}", "");
             }
@@ -617,7 +613,6 @@ if (valveMatch) {
     }
 
     reformatNumbers();
-
     r.focus();
     navigator.clipboard.writeText(t);
 }
@@ -656,7 +651,6 @@ function renderTable(){
     }).join("");
 
     const tbody = document.getElementById("phraseRows");
-    
     let html = "";
     data.forEach((x, i) => {
         if(adminCategoryFilter !== "전체" && x.category !== adminCategoryFilter) return;
@@ -675,7 +669,6 @@ function renderTable(){
             <td><button class="delbtn" type="button" onclick="deleteItem(${i})">삭제</button></td>
         </tr>`;
     });
-    
     tbody.innerHTML = html;
 }
 
@@ -716,18 +709,16 @@ function moveItem(index, direction){
         if (targetFilteredPos < 0 || targetFilteredPos >= filteredIndices.length) return;
 
         const targetIndex = filteredIndices[targetFilteredPos];
-
         const temp = data[index];
         data[index] = data[targetIndex];
         data[targetIndex] = temp;
     }
-    
     renderTable();
 }
 
 async function saveTable(){
     data = readTable();
-    await saveTableToFirestore(); // 👈 파이어베이스 클라우드 서버에 저장!
+    await saveTableToFirestore(); 
     render();
     document.getElementById("saveMsg").textContent="클라우드 저장 완료!";
     setTimeout(()=>document.getElementById("saveMsg").textContent="",1500)
@@ -777,14 +768,12 @@ function setupSplitter(id,leftId,rightId){
   sp.addEventListener("pointercancel",()=>{dragging=false;document.body.style.cursor="";document.body.style.userSelect=""});
 }
 
-// 기존 코드에 있던 함수들 밑이나 적당한 자리에 아래와 같이 넣어주세요
 function initApp(){
     loadLayout();
     setupSplitter("split1","paneCat","paneMid");
     setupSplitter("split2","paneMid","paneResult");
     render();
 }
-
 
 document.addEventListener("keydown", function(e){
     const activeEl = document.activeElement;
@@ -801,7 +790,43 @@ document.addEventListener("keydown", function(e){
         clearResult();
     }
 });
-  
+
+function backupDataFile() {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "phrase_backup.json";
+    a.click();
+}
+
+async function restoreDataFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        try {
+            const importedData = JSON.parse(e.target.result);
+            if (Array.isArray(importedData)) {
+                if (confirm("백업 파일의 문구로 데이터를 교체하고 파이어베이스에 저장하시겠습니까?")) {
+                    data = importedData;
+                    await saveTableToFirestore();
+                    render();
+                    if(typeof renderTable === "function") renderTable();
+                    alert("성공적으로 복원되어 파이어베이스에 저장되었습니다!");
+                }
+            } else {
+                alert("올바른 백업 파일 형식이 아닙니다.");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("파일을 읽는 중 에러가 발생했습니다.");
+        }
+        event.target.value = "";
+    };
+    reader.readAsText(file);
+}
 </script>
 <script>
 (function(){
@@ -884,47 +909,5 @@ document.addEventListener("keydown", function(e){
     };
   }
 })();
-
-
-  function backupDataFile() {
-    const currentData = JSON.parse(localStorage.getItem("usData") || "null") || DEFAULT_DATA;
-    const blob = new Blob([JSON.stringify(currentData, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "phrase_backup.json";
-    a.click();
-}
-
-
-  async function restoreDataFile(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async function(e) {
-        try {
-            const importedData = JSON.parse(e.target.result);
-            if (Array.isArray(importedData)) {
-                if (confirm("백업 파일의 문구로 데이터를 교체하고 파이어베이스에 저장하시겠습니까?")) {
-                    data = importedData;
-                    // 파이어베이스 클라우드 서버에 저장
-                    await saveTableToFirestore();
-                    render();
-                    if(typeof renderTable === "function") renderTable();
-                    alert("성공적으로 복원되어 파이어베이스에 저장되었습니다!");
-                }
-            } else {
-                alert("올바른 백업 파일 형식이 아닙니다.");
-            }
-        } catch (err) {
-            console.error(err);
-            alert("파일을 읽는 중 에러가 발생했습니다.");
-        }
-        // 파일 입력 초기화 (같은 파일 다시 선택 가능하도록)
-        event.target.value = "";
-    };
-    reader.readAsText(file);
-}
 </script>
 </body></html>
