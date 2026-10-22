@@ -447,7 +447,18 @@ function render(){
     document.getElementById("items").innerHTML=items.map(x=>`<div class="item"><span class="tag">${esc(x.group)}</span><button onclick="useItem(${data.indexOf(x)})">${esc(x.label)}</button></div>`).join("")||'<div style="padding:20px;color:#777">검색 결과가 없습니다.</div>';
 }
 
-function selectCat(c){currentCategory=c;document.getElementById("search").value="";render()}
+function selectCat(c){
+    currentCategory = c;
+    document.getElementById("search").value = "";
+    
+    // 지정한 카테고리를 클릭했을 때 결과지 비우기
+    const targetCats = ["유방", "갑상선", "경동맥", "자궁", "전립선", "심장", "방광"];
+    if (targetCats.includes(c)) {
+        document.getElementById("result").value = "";
+    }
+    
+    render();
+}
 
 function getTodayDate(){
     const d = new Date();
