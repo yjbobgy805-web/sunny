@@ -114,7 +114,6 @@ button{cursor:pointer}.topbtn,.toolbar button{border:1px solid #cbd3dc;backgroun
   font-weight: bold;
 }
 
-/* 선택 팝업 UI (상단 중앙 배치) */
 #choiceModal {
   display: none;
   position: fixed;
@@ -155,6 +154,68 @@ button{cursor:pointer}.topbtn,.toolbar button{border:1px solid #cbd3dc;backgroun
   background: #143552;
 }
 
+/* 🖼️ 그림파일 보기 팝업 스타일 */
+#imagePopup {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #fff;
+  border: 2px solid #1f4e78;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+  z-index: 100000;
+  text-align: center;
+  max-width: 95vw;
+}
+.image-container {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.img-box {
+  text-align: center;
+}
+.img-box img {
+  width: 280px;
+  height: 200px;
+  object-fit: contain;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  padding: 5px;
+  background: #fafbfc;
+  cursor: pointer;
+  transition: transform 0.1s, border-color 0.2s;
+}
+.img-box img:hover {
+  border-color: #1f4e78;
+  transform: scale(1.02);
+}
+.img-box img:active {
+  transform: scale(0.98);
+}
+.popup-close {
+  margin-top: 15px;
+  padding: 6px 16px;
+  background: #1f4e78;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+#copyStatus {
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: bold;
+  color: #176b3a;
+  min-height: 18px;
+}
+
 @media(max-width:768px){
   .pane-cat{width:130px}
   .pane-result{width:280px}
@@ -173,7 +234,6 @@ button{cursor:pointer}.topbtn,.toolbar button{border:1px solid #cbd3dc;backgroun
   font-size:12px;
   opacity:.65;
 }
-/* 🔒 파이어베이스 로그인 오버레이 스타일 */
 #loginOverlay {
   position: fixed;
   top: 0; left: 0; width: 100%; height: 100%;
@@ -214,11 +274,9 @@ button{cursor:pointer}.topbtn,.toolbar button{border:1px solid #cbd3dc;backgroun
 }
 .login-box button:hover { background: #143552; }
 #loginError { color: #d9534f; font-size: 13px; margin-top: 10px; display: none; }
-
 </style></head>
 <body>
 
-<!-- 🔒 파이어베이스 로그인 오버레이 HTML -->
 <div id="loginOverlay">
   <div class="login-box">
     <h2>🔒로그인</h2>
@@ -248,7 +306,6 @@ button{cursor:pointer}.topbtn,.toolbar button{border:1px solid #cbd3dc;backgroun
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // 전역(window)으로 등록하여 일반 script 영역에서 쓸 수 있게 설정
     window.db = db;
     window.doc = doc;
     window.getDoc = getDoc;
@@ -290,7 +347,15 @@ button{cursor:pointer}.topbtn,.toolbar button{border:1px solid #cbd3dc;backgroun
     };
 </script>
 
-<header><h1>결과 문구 작성기</h1><button class="topbtn" onclick="openAdmin()">⚙ 문구 관리</button><span class="small">버튼 클릭 → 결과에 추가 · 전체 복사</span></header>
+<header>
+  <h1>결과 문구 작성기</h1>
+  <div style="display:flex; gap:8px;">
+    <button class="topbtn" onclick="openAdmin()">⚙ 문구 관리</button>
+    <button class="topbtn" onclick="openImagePopup()">🖼️ 그림파일</button>
+  </div>
+  <span class="small">버튼 클릭 → 결과에 추가 · 전체 복사</span>
+</header>
+
 <div class="wrap" id="layoutWrap">
 <section class="pane pane-cat" id="paneCat"><div class="panel"><h2>검사 항목</h2><div class="search"><input id="search" placeholder="문구 검색..." oninput="render()"></div><div id="categories" class="scroll"></div></div></section>
 <div class="splitter" id="split1" title="드래그해서 폭 조절"></div>
@@ -299,10 +364,28 @@ button{cursor:pointer}.topbtn,.toolbar button{border:1px solid #cbd3dc;backgroun
 <section class="pane pane-result" id="paneResult"><div class="panel result"><h2>결과지</h2><div class="toolbar"><button onclick="copyResult()">전체 복사</button><button onclick="clearResult()">전체 삭제</button><button onclick="addLine()">직접 입력</button></div><textarea id="result" placeholder="선택한 문구가 여기에 추가됩니다. (# : 1. 2. / @ : 1) 2) 로 자동 번호 변환)" oninput="reformatNumbers()"></textarea></div></section>
 </div>
 
-<!-- 상단 중앙 선택 팝업 모달 -->
 <div id="choiceModal">
   <h3 id="choiceModalTitle">위치를 선택하세요</h3>
   <div class="choice-btns" id="choiceBtnContainer"></div>
+</div>
+
+<!-- 🖼️ 그림파일 보기 팝업 모달 (클릭 시 복사 여부 확인창 뜸) -->
+<div id="imagePopup">
+  <h3 style="margin-top:0; color:#1f4e78;">자궁 방향 도식 (원하는 그림을 클릭하세요!)</h3>
+  <div class="image-container">
+    <div class="img-box">
+      <p style="margin:0 0 5px; font-weight:bold; font-size:13px;">AVF (전경전굴)</p>
+      <img src="AVF.jpg" alt="AVF 그림" onclick="confirmAndCopy('AVF.jpg', 'AVF')">
+    </div>
+    <div class="img-box">
+      <p style="margin:0 0 5px; font-weight:bold; font-size:13px;">RVF (후경전굴)</p>
+      <img src="RVF.jpg" alt="RVF 그림" onclick="confirmAndCopy('RVF.jpg', 'RVF')">
+    </div>
+  </div>
+  <div id="copyStatus"></div>
+  <div>
+    <button class="popup-close" onclick="closeImagePopup()">닫기</button>
+  </div>
 </div>
 
 <div id="admin">
@@ -395,7 +478,38 @@ let data = DEFAULT_DATA;
 let currentCategory = "복부";
 let adminCategoryFilter = "전체";
 
-// 1. 파이어베이스 Firestore에서 데이터 불러오기 함수
+function openImagePopup() {
+    document.getElementById("imagePopup").style.display = "block";
+    document.getElementById("copyStatus").textContent = "";
+}
+function closeImagePopup() {
+    document.getElementById("imagePopup").style.display = "none";
+}
+
+// 🖼️ 그림 클릭 시 확인창을 띄우고 복사하는 함수
+function confirmAndCopy(imagePath, imageName) {
+    if (confirm(`[${imageName}] 그림을 클립보드에 복사하시겠습니까?`)) {
+        copyImageToClipboard(imagePath, imageName);
+    }
+}
+
+async function copyImageToClipboard(imagePath, imageName) {
+    const statusEl = document.getElementById("copyStatus");
+    try {
+        const response = await fetch(imagePath);
+        const blob = await response.blob();
+        await navigator.clipboard.write([
+            new ClipboardItem({ [blob.type]: blob })
+        ]);
+        statusEl.style.color = "#176b3a";
+        statusEl.textContent = `✅ [${imageName}] 그림이 클립보드에 복사되었습니다!`;
+    } catch (err) {
+        console.error("클립보드 복사 오류:", err);
+        statusEl.style.color = "#d9534f";
+        statusEl.textContent = `⚠️ 브라우저 보안으로 복사되지 않았습니다. 우클릭 후 '이미지 복사'를 이용해주세요.`;
+    }
+}
+
 async function loadDataFromFirestore() {
     try {
         if (window.db && window.doc && window.getDoc) {
@@ -413,7 +527,6 @@ async function loadDataFromFirestore() {
     }
 }
 
-// 2. 파이어베이스 Firestore에 데이터 저장하기 함수
 async function saveTableToFirestore() {
     try {
         const docRef = window.doc(window.db, "settings", "phraseData");
@@ -451,7 +564,6 @@ function selectCat(c){
     currentCategory = c;
     document.getElementById("search").value = "";
     
-    // 지정한 카테고리를 클릭했을 때 결과지 비우기
     const targetCats = ["유방", "갑상선", "경동맥", "자궁", "전립선", "심장", "방광"];
     if (targetCats.includes(c)) {
         document.getElementById("result").value = "";
@@ -496,7 +608,6 @@ function reformatNumbers(){
     r.value = newLines.join("\n");
 }
 
-/* 상단 중앙 모달창 형태의 버튼 선택 함수 */
 function askChoiceModal(options) {
     return new Promise((resolve) => {
         const modal = document.getElementById("choiceModal");
