@@ -413,6 +413,7 @@ button{cursor:pointer}.topbtn,.toolbar button{border:1px solid #cbd3dc;backgroun
 
   <div class="drawing-toolbar">
     <button type="button" id="drawingLoad">그림불러오기</button>
+    <button type="button" id="drawingClear" data-draw-mode="annotation-eraser">그림지우기</button>
     <input type="file" id="drawingFile" accept="image/*" hidden>
     <button type="button" id="drawingFlip">좌우반전</button>
     <button type="button" id="drawingCopy">그림복사하기</button>
@@ -423,8 +424,8 @@ button{cursor:pointer}.topbtn,.toolbar button{border:1px solid #cbd3dc;backgroun
     <button type="button" data-draw-mode="line">실선그리기</button>
     <button type="button" data-draw-mode="pen">자유그리기</button>
     <button type="button" data-draw-mode="text">텍스트</button>
+    <button type="button" data-draw-mode="size">크기입력</button>
     <button type="button" data-draw-mode="eraser">원본 지우개</button>
-    <button type="button" id="drawingClear">그림지우기</button>
     <button type="button" id="drawingUndo">뒤로가기</button>
   </div>
   <div class="drawing-colors" aria-label="그리기 색상">
@@ -1143,8 +1144,7 @@ async function restoreDataFile(event) {
   function ellipseAt(start,p) {return {x:(start.x+p.x)/2,y:(start.y+p.y)/2,rx:Math.max(1,Math.abs(p.x-start.x)/2),ry:Math.max(1,Math.abs(p.y-start.y)/2),angle:0,color};}
   function rotationHandle(f) {const distance=f.ry+42;return {x:f.x+Math.sin(f.angle)*distance,y:f.y-Math.cos(f.angle)*distance};}
   function insideEllipse(f,p) {const dx=p.x-f.x,dy=p.y-f.y,c=Math.cos(f.angle),s=Math.sin(f.angle);return ((dx*c+dy*s)/f.rx)**2+((-dx*s+dy*c)/f.ry)**2<=1;}
-  function drawEllipses(controls) {
-    const shapes=stroke && stroke.preview?[...ellipses,stroke.preview]:ellipses;
+  function drawEllipses(controls, ctx = canvas.getContext("2d"), shapes = stroke && stroke.preview ? [...ellipses, stroke.preview] : ellipses) {
     shapes.forEach(f=>{ctx.save();ctx.translate(f.x,f.y);ctx.rotate(f.angle);ctx.beginPath();ctx.ellipse(0,0,f.rx,f.ry,0,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle=f.color;ctx.lineWidth=4;ctx.stroke();ctx.restore();});
     if(controls && selectedEllipse && ellipses.includes(selectedEllipse)) {
       const f=selectedEllipse,handle=rotationHandle(f);
@@ -1153,9 +1153,9 @@ async function restoreDataFile(event) {
       ctx.beginPath();ctx.arc(handle.x,handle.y,13,0,Math.PI*2);ctx.fillStyle='#0284c7';ctx.fill();ctx.strokeStyle='#fff';ctx.stroke();ctx.restore();
     }
   }
-  function drawFibroids() {
+  function drawFibroids(ctx = canvas.getContext("2d"), shapes = fibroids) {
     ctx.save();
-    fibroids.forEach(f=>{
+    shapes.forEach(f=>{
       ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle=f.color;ctx.lineWidth=4;ctx.stroke();
       ctx.fillStyle=f.color;ctx.font=f.font+'px Arial, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
       ctx.fillText(f.label,f.x,f.y,Math.max(8,f.r*1.8));
@@ -1182,7 +1182,18 @@ async function restoreDataFile(event) {
   }
   function finishText(commit = true) {
     if(!textPoint) return;
-    if(commit && field.value.trim()) {save();textCtx.fillStyle=color;textCtx.font=fontSize+'px Arial, sans-serif';textCtx.textBaseline='top';textCtx.fillText(field.value,textPoint.x,textPoint.y);}
+    let value = field.value;
+    if (commit && mode === 'size' && value.trim()) {
+      const size = value.trim();
+      if (/^(?:[0-9]+(?:[.][0-9]+)?|[.][0-9]+)$/.test(size) && Number.isFinite(Number(size))) {
+        value = size + 'cm';
+        status.textContent = '';
+      } else {
+        value = '';
+        status.textContent = '크기는 2.5처럼 숫자로 입력하세요.';
+      }
+    }
+    if(commit && value.trim()) {save();textCtx.fillStyle=color;textCtx.font=fontSize+'px Arial, sans-serif';textCtx.textBaseline='top';textCtx.fillText(value,textPoint.x,textPoint.y);}
     textPoint=null;field.hidden=true;field.value='';render();
   }
   function setImage(src,label,remember) {
@@ -1200,12 +1211,36 @@ async function restoreDataFile(event) {
     image.onerror=()=>{status.textContent='이미지를 불러오지 못했습니다. 다른 이미지 파일을 선택해 주세요.';};
     image.src=src;
   }
-  function selectMode(value) {finishText();mode=value;document.querySelectorAll('[data-draw-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.drawMode===mode)));}
+  function selectMode(value) {
+    finishText();
+    if (value === 'size') status.textContent = '그림에서 표시할 위치를 클릭하고 숫자를 입력한 뒤 Enter를 누르세요.';
+    else if (value === 'annotation-eraser') status.textContent = '직접 그린 부분 위를 드래그하여 지우세요.';
+    else if (mode === 'size' || mode === 'annotation-eraser') status.textContent = '';
+    if (value === 'annotation-eraser') {selectedEllipse=null;render();}
+    mode = value;
+    document.querySelectorAll('[data-draw-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.drawMode===mode)));}
   document.querySelectorAll('[data-draw-mode]').forEach(b=>b.addEventListener('click',()=>selectMode(b.dataset.drawMode)));
   document.querySelectorAll('[data-draw-color]').forEach(b=>b.addEventListener('click',()=>{finishText();color=b.dataset.drawColor;document.querySelectorAll('[data-draw-color]').forEach(c=>c.setAttribute('aria-pressed',String(c===b)));}));
   document.querySelector('[data-draw-color]').setAttribute('aria-pressed','true');
   function point(e) {const r=canvas.getBoundingClientRect();return {x:(e.clientX-r.left)*canvas.width/r.width,y:(e.clientY-r.top)*canvas.height/r.height};}
   function style() {pen.strokeStyle=color;pen.fillStyle=color;pen.lineWidth=4;pen.lineCap='round';pen.lineJoin='round';}
+  function eraseAnnotations(p) {
+    const radius = 22;
+    const touchedEllipses = ellipses.filter(f => insideEllipse({...f, rx:f.rx+radius+2, ry:f.ry+radius+2}, p));
+    const touchedFibroids = fibroids.filter(f => Math.hypot(p.x-f.x,p.y-f.y) <= f.r+radius+2);
+    drawEllipses(false, pen, touchedEllipses);
+    drawFibroids(pen, touchedFibroids);
+    ellipses = ellipses.filter(f => !touchedEllipses.includes(f));
+    fibroids = fibroids.filter(f => !touchedFibroids.includes(f));
+    for (const layer of [pen, textCtx]) {
+      layer.save();
+      layer.globalCompositeOperation = 'destination-out';
+      layer.beginPath();
+      layer.arc(p.x,p.y,radius,0,Math.PI*2);
+      layer.fill();
+      layer.restore();
+    }
+  }
   function eraseBackground(p) {
     bg.save();bg.globalCompositeOperation='destination-out';
     bg.beginPath();bg.arc(p.x,p.y,22,0,Math.PI*2);bg.fill();bg.restore();render();
@@ -1247,7 +1282,15 @@ async function restoreDataFile(event) {
   canvas.addEventListener('pointerdown',e=>{
     if(!ready || stroke || moving || (e.pointerType==='mouse' && e.button!==0)) return;
     e.preventDefault();finishText();const p=point(e);
-    if(selectedEllipse) {
+    if (mode === 'annotation-eraser') {
+      save();
+      stroke={id:e.pointerId,last:p,annotationEraser:true};
+      canvas.setPointerCapture(e.pointerId);
+      eraseAnnotations(p);
+      render();
+      return;
+    }
+    if(selectedEllipse && mode!=='size') {
       const handle=rotationHandle(selectedEllipse);
       if(Math.hypot(p.x-handle.x,p.y-handle.y)<=22) {
         save();moving={id:e.pointerId,item:selectedEllipse,kind:'rotate',angle:selectedEllipse.angle,startAngle:Math.atan2(p.y-selectedEllipse.y,p.x-selectedEllipse.x)};canvas.setPointerCapture(e.pointerId);return;
@@ -1255,10 +1298,14 @@ async function restoreDataFile(event) {
     }
     const ellipseHit=ellipses.slice().reverse().find(f=>insideEllipse(f,p));
     const hit=fibroids.slice().reverse().find(f=>Math.hypot(p.x-f.x,p.y-f.y)<=f.r);
-    if(hit) {save();moving={id:e.pointerId,item:hit,dx:p.x-hit.x,dy:p.y-hit.y,x:hit.x,y:hit.y};canvas.setPointerCapture(e.pointerId);return;}
-    if(ellipseHit && mode!=='text') {save();selectedEllipse=ellipseHit;moving={id:e.pointerId,item:ellipseHit,kind:'ellipse',dx:p.x-ellipseHit.x,dy:p.y-ellipseHit.y,x:ellipseHit.x,y:ellipseHit.y};canvas.setPointerCapture(e.pointerId);render();return;}
+    if(hit && mode!=='size') {save();moving={id:e.pointerId,item:hit,dx:p.x-hit.x,dy:p.y-hit.y,x:hit.x,y:hit.y};canvas.setPointerCapture(e.pointerId);return;}
+    if(ellipseHit && mode!=='text' && mode!=='size') {save();selectedEllipse=ellipseHit;moving={id:e.pointerId,item:ellipseHit,kind:'ellipse',dx:p.x-ellipseHit.x,dy:p.y-ellipseHit.y,x:ellipseHit.x,y:ellipseHit.y};canvas.setPointerCapture(e.pointerId);render();return;}
     selectedEllipse=null;render();
-    if(mode==='text') {
+    if(mode==='text' || mode==='size') {
+      const isSize = mode === 'size';
+      field.inputMode = isSize ? 'decimal' : 'text';
+      field.placeholder = isSize ? '예: 2.5' : '텍스트 입력';
+      field.setAttribute('aria-label', isSize ? '크기 숫자 입력, cm 자동 추가' : '그림에 넣을 텍스트');
       textPoint=p;updateTextSize();field.hidden=false;field.style.left=Math.min(p.x/canvas.width*100,70)+'%';field.style.top=Math.min(p.y/canvas.height*100,93)+'%';field.style.color=color;field.focus();return;
     }
     if(mode==='eraser'){save();stroke={id:e.pointerId,last:p,eraser:true};canvas.setPointerCapture(e.pointerId);eraseBackground(p);return;}
@@ -1277,6 +1324,14 @@ async function restoreDataFile(event) {
       f.x=Math.max(f.r,Math.min(canvas.width-f.r,p.x-moving.dx));f.y=Math.max(f.r,Math.min(canvas.height-f.r,p.y-moving.dy));render();return;
     }
     if(!stroke || stroke.id!==e.pointerId) return;e.preventDefault();const p=point(e);
+    if (stroke.annotationEraser) {
+      const {x,y}=stroke.last;
+      const steps=Math.max(1,Math.ceil(Math.hypot(p.x-x,p.y-y)/8));
+      for(let i=1;i<=steps;i++) eraseAnnotations({x:x+(p.x-x)*i/steps,y:y+(p.y-y)*i/steps});
+      stroke.last=p;
+      render();
+      return;
+    }
     if(mode==='eraser'){const steps=Math.max(1,Math.ceil(Math.hypot(p.x-stroke.last.x,p.y-stroke.last.y)/8));for(let i=1;i<=steps;i++)eraseBackground({x:stroke.last.x+(p.x-stroke.last.x)*i/steps,y:stroke.last.y+(p.y-stroke.last.y)*i/steps});stroke.last=p;return;}
     if(mode==='pen') {style();pen.beginPath();pen.moveTo(stroke.last.x,stroke.last.y);pen.lineTo(p.x,p.y);pen.stroke();stroke.last=p;render();}
     else drawShape(p);
@@ -1287,6 +1342,13 @@ async function restoreDataFile(event) {
       moving=null;if(canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);render();return;
     }
     if(!stroke || stroke.id!==e.pointerId) return;
+    if (stroke.annotationEraser) {
+      if (e.type === 'pointercancel') restore(history.pop());
+      stroke=null;
+      if(canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
+      render();
+      return;
+    }
     if(e.type==='pointercancel') {if(stroke.eraser){const prev=history.pop();if(prev)bg.putImageData(prev.bg,0,0);}else{pen.putImageData(stroke.base,0,0);history.pop();}}
     else if(mode==='eraser') {}
     else if(mode==='circle') {
@@ -1300,8 +1362,12 @@ async function restoreDataFile(event) {
   canvas.addEventListener('pointerup',end);canvas.addEventListener('pointercancel',end);
   field.addEventListener('keydown',e=>{if(e.isComposing) return;if(e.key==='Enter'){e.preventDefault();finishText();}else if(e.key==='Escape'){e.preventDefault();finishText(false);}});
   field.addEventListener('blur',()=>finishText());
-  undo.addEventListener('click',()=>{finishText();const prev=history.pop();if(prev){bg.putImageData(prev.bg,0,0);pen.putImageData(prev.ink,0,0);textCtx.putImageData(prev.text,0,0);caption.textContent=prev.label;fibroids=prev.fibroids.map(f=>({...f}));ellipses=prev.ellipses.map(f=>({...f}));selectedEllipse=null;render();}});
-  document.getElementById('drawingClear').addEventListener('click',()=>{finishText();save();fibroids=[];ellipses=[];selectedEllipse=null;pen.clearRect(0,0,canvas.width,canvas.height);textCtx.clearRect(0,0,canvas.width,canvas.height);render();});
+  function restore(prev) {
+    if (!prev) return;
+    bg.putImageData(prev.bg,0,0);pen.putImageData(prev.ink,0,0);textCtx.putImageData(prev.text,0,0);caption.textContent=prev.label;fibroids=prev.fibroids.map(f=>({...f}));ellipses=prev.ellipses.map(f=>({...f}));selectedEllipse=null;
+  }
+  undo.addEventListener('click',()=>{finishText();restore(history.pop());render();});
+
   document.getElementById('drawingFlip').addEventListener('click',()=>{
     finishText();save();
     [background,ink,textLayer].forEach(layer=>{const temp=document.createElement('canvas');temp.width=canvas.width;temp.height=canvas.height;const t=temp.getContext('2d');t.translate(canvas.width,0);t.scale(-1,1);t.drawImage(layer,0,0);const c=layer.getContext('2d');c.clearRect(0,0,canvas.width,canvas.height);c.drawImage(temp,0,0);});
