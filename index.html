@@ -423,6 +423,7 @@ button{cursor:pointer}.topbtn,.toolbar button{border:1px solid #cbd3dc;backgroun
     <button type="button" data-draw-mode="line">실선그리기</button>
     <button type="button" data-draw-mode="pen">자유그리기</button>
     <button type="button" data-draw-mode="text">텍스트</button>
+    <button type="button" data-draw-mode="eraser">원본 지우개</button>
     <button type="button" id="drawingClear">그림지우기</button>
     <button type="button" id="drawingUndo">뒤로가기</button>
   </div>
@@ -435,7 +436,7 @@ button{cursor:pointer}.topbtn,.toolbar button{border:1px solid #cbd3dc;backgroun
   <p class="fibroid-hint">만든 원은 드래그하여 이동 · 원끼리 크기 비율을 맞춘 도식입니다.</p>
   
   <p id="drawingCaption" hidden></p>
-  <div class="drawing-surface"><canvas id="drawingCanvas" width="1000" height="720" aria-label="그림 그리기 영역"></canvas><input id="drawingText" type="text" placeholder="텍스트 입력" aria-label="그림에 넣을 텍스트" hidden></div>
+  <div class="drawing-surface"><canvas id="drawingCanvas" tabindex="0" width="1000" height="720" aria-label="그림 그리기 영역"></canvas><input id="drawingText" type="text" placeholder="텍스트 입력" aria-label="그림에 넣을 텍스트" hidden></div>
 
   <p id="drawingStatus" role="status" aria-live="polite"></p>
 
@@ -1205,6 +1206,36 @@ async function restoreDataFile(event) {
   document.querySelector('[data-draw-color]').setAttribute('aria-pressed','true');
   function point(e) {const r=canvas.getBoundingClientRect();return {x:(e.clientX-r.left)*canvas.width/r.width,y:(e.clientY-r.top)*canvas.height/r.height};}
   function style() {pen.strokeStyle=color;pen.fillStyle=color;pen.lineWidth=4;pen.lineCap='round';pen.lineJoin='round';}
+  function eraseBackground(p) {
+    bg.save();bg.globalCompositeOperation='destination-out';
+    bg.beginPath();bg.arc(p.x,p.y,22,0,Math.PI*2);bg.fill();bg.restore();render();
+  }
+  async function pasteImageBlob(blob) {
+    if(!blob || !blob.type.startsWith('image/')) return;
+    const url=URL.createObjectURL(blob);
+    const image=new Image();
+    image.onload=()=>{
+      finishText();save();
+      // Replace the entire existing drawing with the pasted image.
+      bg.clearRect(0,0,canvas.width,canvas.height);
+      pen.clearRect(0,0,canvas.width,canvas.height);
+      textCtx.clearRect(0,0,canvas.width,canvas.height);
+      fibroids=[];ellipses=[];selectedEllipse=null;moving=null;stroke=null;
+      const scale=Math.min(canvas.width*.72/image.naturalWidth,canvas.height*.78/image.naturalHeight);
+      const w=image.naturalWidth*scale,h=image.naturalHeight*scale;
+      bg.drawImage(image,(canvas.width-w)/2,(canvas.height-h)/2,w,h);
+      ready=true;caption.textContent='붙여넣은 그림';render();
+      status.textContent='그림을 붙여넣었습니다. 원본 지우개로 필요한 부분을 지울 수 있습니다.';
+      URL.revokeObjectURL(url);
+    };
+    image.onerror=()=>{URL.revokeObjectURL(url);status.textContent='그림을 붙여넣지 못했습니다.';};
+    image.src=url;
+  }
+  document.addEventListener('paste',e=>{
+    if(getComputedStyle(document.getElementById('imagePopup')).display==='none') return;
+    const item=Array.from(e.clipboardData?.items||[]).find(i=>i.type.startsWith('image/'));
+    if(item){e.preventDefault();pasteImageBlob(item.getAsFile());}
+  });
   function drawShape(p) {
     if(mode==='circle') {stroke.preview=ellipseAt(stroke.start,p);render();return;}
     pen.putImageData(stroke.base,0,0);style();pen.beginPath();
@@ -1230,6 +1261,7 @@ async function restoreDataFile(event) {
     if(mode==='text') {
       textPoint=p;updateTextSize();field.hidden=false;field.style.left=Math.min(p.x/canvas.width*100,70)+'%';field.style.top=Math.min(p.y/canvas.height*100,93)+'%';field.style.color=color;field.focus();return;
     }
+    if(mode==='eraser'){save();stroke={id:e.pointerId,last:p,eraser:true};canvas.setPointerCapture(e.pointerId);eraseBackground(p);return;}
     save();stroke={id:e.pointerId,start:p,last:p,base:pen.getImageData(0,0,canvas.width,canvas.height)};canvas.setPointerCapture(e.pointerId);style();
     if(mode==='pen') {pen.beginPath();pen.arc(p.x,p.y,2,0,Math.PI*2);pen.fill();render();}
   });
@@ -1245,6 +1277,7 @@ async function restoreDataFile(event) {
       f.x=Math.max(f.r,Math.min(canvas.width-f.r,p.x-moving.dx));f.y=Math.max(f.r,Math.min(canvas.height-f.r,p.y-moving.dy));render();return;
     }
     if(!stroke || stroke.id!==e.pointerId) return;e.preventDefault();const p=point(e);
+    if(mode==='eraser'){const steps=Math.max(1,Math.ceil(Math.hypot(p.x-stroke.last.x,p.y-stroke.last.y)/8));for(let i=1;i<=steps;i++)eraseBackground({x:stroke.last.x+(p.x-stroke.last.x)*i/steps,y:stroke.last.y+(p.y-stroke.last.y)*i/steps});stroke.last=p;return;}
     if(mode==='pen') {style();pen.beginPath();pen.moveTo(stroke.last.x,stroke.last.y);pen.lineTo(p.x,p.y);pen.stroke();stroke.last=p;render();}
     else drawShape(p);
   });
@@ -1254,7 +1287,8 @@ async function restoreDataFile(event) {
       moving=null;if(canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);render();return;
     }
     if(!stroke || stroke.id!==e.pointerId) return;
-    if(e.type==='pointercancel') {pen.putImageData(stroke.base,0,0);history.pop();}
+    if(e.type==='pointercancel') {if(stroke.eraser){const prev=history.pop();if(prev)bg.putImageData(prev.bg,0,0);}else{pen.putImageData(stroke.base,0,0);history.pop();}}
+    else if(mode==='eraser') {}
     else if(mode==='circle') {
       const p=point(e);
       if(Math.abs(p.x-stroke.start.x)>2 && Math.abs(p.y-stroke.start.y)>2) {const f=ellipseAt(stroke.start,p);ellipses.push(f);selectedEllipse=f;status.textContent='원을 드래그해 이동하고, 위쪽 파란 손잡이를 드래그해 회전하세요.';}
