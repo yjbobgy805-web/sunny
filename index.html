@@ -11,7 +11,15 @@ button{cursor:pointer}.topbtn,.toolbar button{border:1px solid #cbd3dc;backgroun
 .search{padding:10px;border-bottom:1px solid #e5e8ec;flex-shrink:0}.search input{width:100%;padding:10px;border:1px solid #cfd6df;border-radius:7px}
 .scroll{overflow:auto;flex:1}.cat{padding:11px 14px;font-weight:700;border-bottom:1px solid #eee;cursor:pointer}.cat:hover,.cat.active{background:#eef5fb;color:#1f4e78}
 .item{display:flex;gap:8px;padding:10px 12px;border-bottom:1px solid #eee}.item button{flex:1;text-align:left;border:1px solid #d5dce4;background:#fff;border-radius:7px;padding:9px}.item button:hover{background:#eef6ff}
-.tag{font-size:11px;color:#777;min-width:70px;padding-top:10px}.toolbar{display:flex;gap:7px;padding:10px;border-bottom:1px solid #e5e8ec;flex-shrink:0}
+.toolbar{display:flex;gap:7px;padding:10px;border-bottom:1px solid #e5e8ec;flex-shrink:0}
+
+.organ-nav{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px;border-bottom:1px solid #e5e8ec;flex-shrink:0}
+.organ-nav[hidden]{display:none}
+.organ-nav button{border:1px solid #cbd3dc;background:#fff;color:#1f4e78;border-radius:7px;padding:5px 10px;font:inherit;font-size:13px}
+.organ-nav button:hover,.organ-nav button:focus-visible{background:#eef5fb}
+.organ-heading{margin:0;padding:8px 12px;background:#eef5fb;color:#1f4e78;font-size:13px}
+.organ-heading:focus-visible{outline:2px solid #1f4e78;outline-offset:-2px}
+.organ-empty{margin:0;padding:8px 12px;color:#666;font-size:13px}
 
 .panel.result{display:flex;flex-direction:column}
 .panel.result textarea{
@@ -115,11 +123,13 @@ button{cursor:pointer}.topbtn,.toolbar button{border:1px solid #cbd3dc;backgroun
 }
 
 #choiceModal {
-  display: none;
   position: fixed;
-  top: 50px;
-  left: 50%;
-  transform: translateX(-50%);
+  inset: auto;
+  margin: 0;
+  width: max-content;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 16px);
+  overflow: auto;
   background: #ffffff;
   border: 2px solid #1f4e78;
   border-radius: 12px;
@@ -127,15 +137,42 @@ button{cursor:pointer}.topbtn,.toolbar button{border:1px solid #cbd3dc;backgroun
   box-shadow: 0 12px 30px rgba(0,0,0,0.25);
   z-index: 100000;
   text-align: center;
-  min-width: 300px;
+  min-width: min(300px, calc(100vw - 16px));
 }
 #choiceModal h3 {
+  white-space: pre-line;
   margin: 0 0 15px 0;
   font-size: 16px;
   color: #1f4e78;
 }
+.phrase-input{width:100%;padding:8px;margin-bottom:10px;font:inherit}
+#choiceModal:has(.phrase-labeled-fields){width:min(270px,calc(100vw - 16px));min-width:0;padding:14px 16px}
+#choiceModal:has(.phrase-labeled-fields) h3{margin-bottom:10px}
+.phrase-labeled-fields{width:100%;min-width:0}
+.phrase-side-options{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:0 0 10px;padding:0;border:0}
+.phrase-side-options legend{margin-bottom:5px}
+.phrase-side-options label{position:relative;cursor:pointer}
+.phrase-side-options input{position:absolute;opacity:0}
+.phrase-side-options span{display:block;padding:5px 8px;border:1px solid #cbd3dc;border-radius:7px}
+.phrase-side-options input:checked + span{background:#1f4e78;color:white}
+.phrase-side-options input:focus-visible + span{outline:2px solid #1f4e78;outline-offset:2px}
+.breast-measurement-entry{display:flex;align-items:start;justify-content:center;gap:6px}
+.breast-measurement-entry .breast-measurements{min-width:0}
+.breast-add-measurement{flex-shrink:0;border:1px solid #cbd3dc;border-radius:7px;background:#eef5fb;color:#1f4e78;padding:8px;font:inherit}
+.breast-add-measurement:hover{background:#dceaf6}
+.breast-measurements{display:flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap}
+.breast-measurements .phrase-input{width:calc(3ch + 26px);min-width:0;flex:0 1 auto;margin:0 0 10px;text-align:center}
+.breast-measurements .phrase-input:first-child{width:calc(7ch + 26px)}
+.breast-measurements span{margin-bottom:10px}
+.finding-size-options{display:grid;gap:8px;width:min(290px,100%)}
+.finding-size-row{display:flex;align-items:center;gap:6px}
+.finding-size-row input{flex:1;width:0;min-width:0;margin:0}
+.finding-size-row button{flex:0 0 auto}
+.finding-size-extra{display:flex;align-items:center;gap:6px;padding:0 0 0 12px}
+.finding-size-extra input{max-width:125px}
 .choice-btns {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   justify-content: center;
 }
@@ -150,6 +187,9 @@ button{cursor:pointer}.topbtn,.toolbar button{border:1px solid #cbd3dc;backgroun
   border-radius: 8px;
   transition: background 0.2s;
 }
+.phrase-actions{display:grid;gap:6px;width:100%}
+.choice-btns .phrase-close{background:#526174;color:#fff}
+.choice-btns .phrase-close:hover{background:#3e4b5c}
 .choice-btns button:hover {
   background: #143552;
 }
@@ -398,15 +438,15 @@ button{cursor:pointer}.topbtn,.toolbar button{border:1px solid #cbd3dc;backgroun
 <div class="wrap" id="layoutWrap">
 <section class="pane pane-cat" id="paneCat"><div class="panel"><h2>검사 항목</h2><div class="search"><input id="search" placeholder="문구 검색..." oninput="render()"></div><div id="categories" class="scroll"></div></div></section>
 <div class="splitter" id="split1" title="드래그해서 폭 조절"></div>
-<section class="pane pane-mid" id="paneMid"><div class="panel"><h2 id="middleTitle">문구 선택</h2><div id="items" class="scroll"></div></div></section>
+<section class="pane pane-mid" id="paneMid"><div class="panel"><h2 id="middleTitle">문구 선택</h2><nav id="organNav" class="organ-nav" aria-label="복부 장기 바로가기" hidden></nav><div id="items" class="scroll"></div></div></section>
 <div class="splitter" id="split2" title="드래그해서 폭 조절"></div>
-<section class="pane pane-result" id="paneResult"><div class="panel result"><h2>결과지</h2><div class="toolbar"><button onclick="copyResult()">전체 복사</button><button onclick="clearResult()">전체 삭제</button><button onclick="addLine()">직접 입력</button></div><textarea id="result" placeholder="선택한 문구가 여기에 추가됩니다. (# : 1. 2. / @ : 1) 2) 로 자동 번호 변환)" oninput="reformatNumbers()"></textarea></div></section>
+<section class="pane pane-result" id="paneResult"><div class="panel result"><h2>결과지</h2><div class="toolbar"><button onclick="copyResult()">전체 복사</button><button onclick="clearResult()">전체 삭제</button><button onclick="addLine(this)">직접 입력</button></div><textarea id="result" placeholder="선택한 문구가 여기에 추가됩니다. (# : 1. 2. / @ : 1) 2) 로 자동 번호 변환)" oninput="reformatNumbers()"></textarea></div></section>
 </div>
 
-<div id="choiceModal">
+<dialog id="choiceModal" aria-labelledby="choiceModalTitle">
   <h3 id="choiceModalTitle">위치를 선택하세요</h3>
   <div class="choice-btns" id="choiceBtnContainer"></div>
-</div>
+</dialog>
 
 <!-- 🖼️ 순수 이미지 보기 팝업 모달 -->
 <div id="imagePopup" role="dialog" aria-label="그림 편집기">
@@ -472,12 +512,23 @@ button{cursor:pointer}.topbtn,.toolbar button{border:1px solid #cbd3dc;backgroun
 
 <script>
 const CATEGORY_ORDER = [
-  "복부", "복부(신,췌,비)", "유방", "갑상선", "경동맥", "자궁", "전립선", "심장", "방광", "복부대동맥", "종검", "히스토리/의사"
+  "복부", "유방", "갑상선", "경동맥", "자궁", "전립선", "심장", "방광", "복부대동맥", "종검", "히스토리/의사"
 ];
 
+const ABDOMINAL_ORGANS = ["간", "담낭", "담도", "신장", "췌장", "비장"];
 const DEFAULT_DATA = [];
 
+function displayCategory(category) {
+    return category === "복부(신,췌,비)" ? "복부" : category;
+}
+
+function abdominalOrgan(item) {
+    const group = String(item.group || "").trim();
+    return group.split(/\s*[/·]\s*/)[0];
+}
+
 let data = DEFAULT_DATA;
+const newPhrases = new WeakSet();
 let currentCategory = "복부";
 let adminCategoryFilter = "전체";
 
@@ -510,8 +561,10 @@ async function saveTableToFirestore() {
     try {
         const docRef = window.doc(window.db, "settings", "phraseData");
         await window.setDoc(docRef, { items: data });
+        return true;
     } catch (e) {
         console.error("데이터 저장 실패:", e);
+        return false;
     }
 }
 
@@ -561,7 +614,7 @@ function copyImageToClipboard(imgElement) {
 
 
 function getOrderedCategories(dataList){
-    const presentCats = [...new Set(dataList.map(x => x.category))];
+    const presentCats = [...new Set(dataList.map(x => displayCategory(x.category)))];
     const ordered = CATEGORY_ORDER.filter(c => presentCats.includes(c));
     const remain = presentCats.filter(c => !CATEGORY_ORDER.includes(c));
     return [...ordered, ...remain];
@@ -579,20 +632,58 @@ function render(){
         <div class="cat ${c===currentCategory && !q ? 'active' : ''}" onclick="selectCat('${esc(c)}')">${esc(c)}</div>
     `).join("");
 
-    let items=data.filter(x=>(!q?x.category===currentCategory:true)&&(!q||(x.label+x.text+x.group+x.category).toLowerCase().includes(q)));
+    let items=data.filter(x=>(!q?displayCategory(x.category)===currentCategory:true)&&(!q||(x.label+x.text+x.group+x.category).toLowerCase().includes(q)));
     document.getElementById("middleTitle").textContent=q?"검색 결과":currentCategory+" 문구";
-    document.getElementById("items").innerHTML=items.map(x=>`<div class="item"><span class="tag">${esc(x.group)}</span><button onclick="useItem(${data.indexOf(x)})">${esc(x.label)}</button></div>`).join("")||'<div style="padding:20px;color:#777">검색 결과가 없습니다.</div>';
+    const itemList = document.getElementById("items");
+    const organNav = document.getElementById("organNav");
+    const showOrganNav = !q && currentCategory === "복부";
+    organNav.hidden = !showOrganNav;
+    const renderItem = x => `<div class="item"><button onclick="useItem(${data.indexOf(x)}, this)">${esc(x.label)}</button></div>`;
+
+    if (showOrganNav) {
+        const generalItems = items.filter(x => !ABDOMINAL_ORGANS.includes(abdominalOrgan(x)));
+        itemList.innerHTML = generalItems.map(renderItem).join("") + ABDOMINAL_ORGANS.map((organ, index) => {
+            const organItems = items.filter(x => abdominalOrgan(x) === organ);
+            return `<section aria-labelledby="organ-${index}">
+                <h3 class="organ-heading" id="organ-${index}" tabindex="-1">${organ}</h3>
+                ${organItems.map(renderItem).join("") || '<p class="organ-empty">등록된 문구가 없습니다.</p>'}
+            </section>`;
+        }).join("");
+    } else {
+        itemList.innerHTML = items.map(renderItem).join("") || '<div style="padding:20px;color:#777">검색 결과가 없습니다.</div>';
+    }
+    itemList.scrollTop = 0;
 }
+
+function jumpToOrgan(index) {
+    const heading = document.getElementById("organ-" + index);
+    if (!heading) return;
+    heading.focus({ preventScroll: true });
+    heading.scrollIntoView({ block: "start" });
+}
+
+const EXAM_TITLE_NAMES = new Map([
+    ["복부", "복부"],
+    ["유방", "유방"],
+    ["갑상선", "갑상선"],
+    ["경동맥", "경동맥"],
+    ["자궁", "자궁 난소"],
+    ["전립선", "전립선"],
+    ["심장", "심장"]
+]);
 
 function selectCat(c){
     currentCategory = c;
     document.getElementById("search").value = "";
-    
-    const targetCats = ["유방", "갑상선", "경동맥", "자궁", "전립선", "심장", "방광"];
-    if (targetCats.includes(c)) {
-        document.getElementById("result").value = "";
+
+    const examName = EXAM_TITLE_NAMES.get(c);
+    if (examName) {
+        const result = document.getElementById("result");
+        const separator = result.value && !result.value.endsWith("\n") ? "\n" : "";
+        result.value += separator + ",           <" + examName + " 초음파>";
+        result.scrollTop = result.scrollHeight;
     }
-    
+
     render();
 }
 
@@ -632,113 +723,572 @@ function reformatNumbers(){
     r.value = newLines.join("\n");
 }
 
-function askChoiceModal(options) {
-    return new Promise((resolve) => {
-        const modal = document.getElementById("choiceModal");
-        const container = document.getElementById("choiceBtnContainer");
-        container.innerHTML = "";
+function positionPhraseModal(modal, anchor) {
+    const gap = 8;
+    const rect = anchor.getBoundingClientRect();
+    const width = modal.offsetWidth;
+    modal.style.maxHeight = "";
+    const height = modal.offsetHeight;
+    const above = rect.top - height - gap;
+    const below = rect.bottom + gap;
+    const left = rect.left + (rect.width - width) / 2;
+    modal.style.left = Math.max(gap, Math.min(left, window.innerWidth - width - gap)) + "px";
+    const top = Math.max(gap, Math.min(above >= gap ? above : below, window.innerHeight - height - gap));
+    modal.style.top = top + "px";
+    modal.style.maxHeight = (window.innerHeight - top - gap) + "px";
+}
 
-        options.forEach(opt => {
-            const btn = document.createElement("button");
-            btn.textContent = opt;
-            btn.onclick = () => {
-                modal.style.display = "none";
-                resolve(opt);
-            };
-            container.appendChild(btn);
-        });
+function askPhraseModal(anchor, title, buildContent, fixedSize = false) {
+    const modal = document.getElementById("choiceModal");
+    const container = document.getElementById("choiceBtnContainer");
+    document.getElementById("choiceModalTitle").textContent = title;
+    container.replaceChildren();
+    modal.style.width = "";
+    modal.style.height = "";
+    modal.style.maxHeight = "";
 
-        modal.style.display = "block";
+    return new Promise(resolve => {
+        let answer = null;
+        const finish = value => {
+            answer = value;
+            modal.close();
+        };
+        const focusTarget = buildContent(container, finish);
+        const reposition = () => positionPhraseModal(modal, anchor);
+        modal.addEventListener("close", () => {
+            window.removeEventListener("resize", reposition);
+            resolve(answer);
+        }, { once: true });
+        modal.showModal();
+        reposition();
+        if (fixedSize) {
+            modal.style.width = modal.offsetWidth + "px";
+            modal.style.height = modal.offsetHeight + "px";
+        }
+        window.addEventListener("resize", reposition);
+        focusTarget.focus({ preventScroll: true });
     });
 }
 
-async function useItem(i){
+function askChoiceModal(anchor, options, multiple = false) {
+    return askPhraseModal(anchor, multiple ? "판막을 선택하세요" : "위치를 선택하세요", (container, finish) => {
+        const selected = new Set();
+        for (const option of options) {
+            const button = document.createElement("button");
+            button.textContent = option;
+            if (multiple) button.setAttribute("aria-pressed", "false");
+            button.onclick = () => {
+                if (!multiple) {
+                    finish(option);
+                    return;
+                }
+                if (selected.has(option)) selected.delete(option);
+                else selected.add(option);
+                button.setAttribute("aria-pressed", String(selected.has(option)));
+                button.style.background = selected.has(option) ? "#176b3a" : "";
+            };
+            container.appendChild(button);
+        }
+        if (multiple) {
+            const done = document.createElement("button");
+            done.textContent = "입력";
+            done.onclick = () => finish([...selected].join(", "));
+            const close = document.createElement("button");
+            close.textContent = "닫기";
+            close.className = "phrase-close";
+            close.onclick = () => finish(null);
+            const actions = document.createElement("div");
+            actions.className = "choice-btns phrase-actions";
+            actions.append(done, close);
+            container.appendChild(actions);
+        }
+        return container.firstElementChild;
+    });
+}
+
+function renderPhraseSides(sides, name = "side", legend = "방향", multiple = false) {
+    return sides.length
+        ? '<fieldset class="phrase-side-options"><legend>' + esc(legend) + '</legend>' +
+            sides.map((side, index) => '<label><input ' + (multiple ? 'type="checkbox"' : 'type="radio" required') +
+                ' name="' + name + '" value="' + index + '"><span>' + esc(side || "없음") + '</span></label>').join("") + '</fieldset>'
+        : "";
+}
+
+const PHRASE_ACTIONS = '<div class="choice-btns phrase-actions"><button type="submit">입력</button><button type="button" class="phrase-close">닫기</button></div>';
+
+function isSizeInputLabel(label) {
+    return /크기|두께|직경|장경|단경/.test(label);
+}
+
+function advanceAfterSize(input, next) {
+    input.addEventListener("input", event => {
+        if (!event.isComposing && !event.inputType?.startsWith("delete") && /^\d*\.\d{2}$/.test(input.value.trim())) {
+            next().focus();
+        }
+    });
+}
+
+function askPhraseInput(anchor, message, sizeField = false) {
+    return askPhraseModal(anchor, message, (container, finish) => {
+        const form = document.createElement("form");
+        form.innerHTML = '<input class="phrase-input" type="text" aria-labelledby="choiceModalTitle">' + PHRASE_ACTIONS;
+        const input = form.querySelector("input");
+        if (sizeField) advanceAfterSize(input, () => form.querySelector('button[type="submit"]'));
+        form.onsubmit = event => {
+            event.preventDefault();
+            finish(input.value);
+        };
+        form.querySelector(".phrase-close").onclick = () => finish(null);
+        container.appendChild(form);
+        return input;
+    });
+}
+
+function askBreastMeasurements(anchor, allowMultiple) {
+    return askPhraseModal(anchor, "크기와 위치 입력", (container, finish) => {
+        const form = document.createElement("form");
+        form.innerHTML = '<div class="breast-measurement-rows"></div>' + PHRASE_ACTIONS;
+        const list = form.querySelector(".breast-measurement-rows");
+        const submit = form.querySelector('button[type="submit"]');
+        const rows = [];
+        const advance = (field, next, complete, allowed) => {
+            let lastValid = field.value;
+            field.addEventListener("input", event => {
+                if (event.isComposing) return;
+                if (allowed && field.value && !allowed.test(field.value)) {
+                    field.value = lastValid;
+                    return;
+                }
+                lastValid = field.value;
+                if (!event.inputType?.startsWith("delete") && complete.test(field.value.trim())) next().focus();
+            });
+        };
+        const addRow = () => {
+            const row = document.createElement("div");
+            row.className = "breast-measurement-entry";
+            row.innerHTML = '<div class="breast-measurements"><input class="phrase-input" type="text" inputmode="decimal" aria-label="크기(cm)" required><span>cm -</span><input class="phrase-input" type="text" inputmode="numeric" aria-label="위치 앞 숫자" pattern="[1-9]|1[0-2]" title="1부터 12까지 입력" required><span>/</span><input class="phrase-input" type="text" inputmode="numeric" aria-label="위치 뒤 숫자" pattern="[1-9]|10" title="1부터 10까지 입력" required></div>';
+            const inputs = [...row.querySelectorAll("input")];
+            const [size, clock, distance] = inputs;
+            const rowIndex = rows.length;
+            if (rowIndex > 0) inputs.forEach(input => { input.required = false; });
+            rows.push(inputs);
+            advanceAfterSize(size, () => clock);
+            advance(clock, () => distance, /^(?:[2-9]|1[0-2])$/, /^(?:[1-9]|1[0-2])$/);
+            advance(distance, () => rows[rowIndex + 1]?.[0] || submit, /^(?:[2-9]|10)$/);
+            list.appendChild(row);
+            return size;
+        };
+        const firstInput = addRow();
+        if (allowMultiple) {
+            const add = document.createElement("button");
+            add.type = "button";
+            add.className = "breast-add-measurement";
+            add.textContent = "추가";
+            add.onclick = () => {
+                const next = addRow();
+                next.focus();
+            };
+            list.firstElementChild.appendChild(add);
+        }
+        form.onsubmit = event => {
+            event.preventDefault();
+            const values = [];
+            for (const [index, inputs] of rows.entries()) {
+                const [size, clock, distance] = inputs.map(input => input.value.trim());
+                if (index > 0 && !size && !clock && !distance) continue;
+                if (!size || !clock || !distance) {
+                    inputs.find(input => !input.value.trim()).focus();
+                    return;
+                }
+                values.push([size, clock + "/" + distance]);
+            }
+            finish(values);
+        };
+        form.querySelector(".phrase-close").onclick = () => finish(null);
+        container.appendChild(form);
+        return firstInput;
+    }, allowMultiple);
+}
+
+const VALVE_OPTIONS = ["MR", "TR", "AR", "PR"];
+
+function phraseChoices(text) {
+    return [...text.matchAll(/\{btn:([^{}]+)\}/g)].map(match => ({
+        token: match[0],
+        options: match[1].split("|"),
+        legend: match[1].split("|").every(option => /^(?:우측|좌측|양측|우|좌|우엽|좌엽|양엽|양쪽)(?:\s*신장)?$/.test(option.trim())) ? "방향" : "선택"
+    }));
+}
+
+function renderPhraseFields(choices, fields, valve) {
+    return choices.map(({options, legend}, index) => renderPhraseSides(options, "choice-" + index, legend)).join("") +
+        (valve ? renderPhraseSides(VALVE_OPTIONS, "valve", "판막", true) : "") +
+        fields.map(({label}) => '<label>' + esc(label) + '<input class="phrase-input" type="text"></label>').join("");
+}
+
+function readPhraseFields(form, choices, valve) {
+    const selected = choices.map(({options}, index) => {
+        const input = form.querySelector('input[name="choice-' + index + '"]:checked');
+        return input ? options[Number(input.value)] : undefined;
+    });
+    if (selected.includes(undefined)) {
+        const index = selected.indexOf(undefined);
+        form.querySelector('input[name="choice-' + index + '"]').focus();
+        return null;
+    }
+    return {
+        selected,
+        valves: valve ? [...form.querySelectorAll('input[name="valve"]:checked')].map(input => VALVE_OPTIONS[Number(input.value)]) : [],
+        values: [...form.querySelectorAll(".phrase-fields input.phrase-input")].map(input => input.value)
+    };
+}
+
+function applyPhraseChoices(text, choices, values, valve) {
+    choices.forEach(({token}, index) => {
+        text = text.replace(token, () => values.selected[index]);
+    });
+    if (valve) text = text.replaceAll("{판막선택}", () => values.valves.join(", "));
+    return text;
+}
+
+function askPhraseFields(anchor, title, choices, fields, valve) {
+    return askPhraseModal(anchor, title, (container, finish) => {
+        const form = document.createElement("form");
+        form.className = "phrase-labeled-fields";
+        form.innerHTML = '<div class="phrase-fields">' + renderPhraseFields(choices, fields, valve) +
+            '</div>' + PHRASE_ACTIONS;
+        const inputs = [...form.querySelectorAll("input.phrase-input")];
+        fields.forEach(({name, label}, index) => {
+            if (name !== "sizes" && isSizeInputLabel(label)) {
+                advanceAfterSize(inputs[index], () => inputs[index + 1] || form.querySelector('button[type="submit"]'));
+            }
+        });
+        form.onsubmit = event => {
+            event.preventDefault();
+            const values = readPhraseFields(form, choices, valve);
+            if (values) finish(values);
+        };
+        form.querySelector('button[type="button"]').onclick = () => finish(null);
+        container.appendChild(form);
+        return form.querySelector("input");
+    });
+}
+
+function askFindingSize(anchor, label, smallLabel = "작은 크기", sides = [], maximumOnly = false, extra) {
+    return askPhraseModal(anchor, label + " 크기 선택", (container, finish) => {
+        const options = document.createElement("div");
+        options.className = "finding-size-options";
+        options.innerHTML = renderPhraseSides(sides) + (extra ? '<div class="phrase-fields">' + renderPhraseFields(extra.choices, extra.fields, extra.valve) + '</div>' : "") + `
+            <form class="finding-size-row choice-btns">
+                <button type="submit">최대:</button>
+                <input class="phrase-input" type="text" inputmode="decimal" aria-label="최대 크기(cm)" required>
+                <span>cm</span>
+            </form>
+            <form class="finding-size-row choice-btns">
+                <button type="submit">크기</button>
+                <input class="phrase-input" type="text" inputmode="decimal" aria-label="크기(cm)" required>
+                <span>cm</span>
+            </form>
+            <div class="choice-btns"><button type="button" data-size-small>${esc(smallLabel)}</button></div>
+            <div class="choice-btns phrase-actions">
+                <button type="button" data-size-submit>입력</button>
+                <button type="button" class="phrase-close" data-size-close>닫기</button>
+            </div>`;
+        if (maximumOnly) options.querySelectorAll("form")[1].remove();
+        const sideInput = options.querySelector('input[name="side"]');
+        const finishSize = value => {
+            const side = options.querySelector('input[name="side"]:checked');
+            if (sides.length && !side) {
+                sideInput.focus();
+                return;
+            }
+            const details = extra ? readPhraseFields(options, extra.choices, extra.valve) : undefined;
+            if (details === null) return;
+            finish({ ...value, side: side ? sides[Number(side.value)] : undefined, details });
+        };
+        const forms = [...options.querySelectorAll("form")];
+        const submit = options.querySelector("[data-size-submit]");
+        const bindSizeInput = (input, form) => {
+            input.addEventListener("focus", () => { activeSizeForm = form; });
+            advanceAfterSize(input, () => {
+                const inputs = [...options.querySelectorAll("input.phrase-input")];
+                return inputs[inputs.indexOf(input) + 1] || submit;
+            });
+        };
+        let activeSizeForm = forms[0];
+        if (extra) {
+            const inputs = [...options.querySelectorAll(".phrase-fields input.phrase-input")];
+            extra.fields.forEach(({name, label}, index) => {
+                if (name !== "sizes" && isSizeInputLabel(label)) {
+                    advanceAfterSize(inputs[index], () => inputs[index + 1] || forms[0].querySelector("input"));
+                }
+            });
+        }
+        const hasSize = form => [...form.querySelectorAll("input.phrase-input")].some(input => input.value.trim());
+        forms.forEach((form, index) => {
+            const input = form.querySelector("input");
+            bindSizeInput(input, form);
+            form.onsubmit = event => {
+                event.preventDefault();
+                const sizes = [...form.querySelectorAll("input.phrase-input")]
+                    .map(field => field.value.trim().replace(/\s*cm$/i, "").trim()).filter(Boolean);
+                const size = sizes.join("cm, ");
+                if (!size) {
+                    input.focus();
+                    return;
+                }
+                const prefix = index === 0 ? "최대:" : "";
+                finishSize({ size: prefix + size });
+            };
+        });
+        if (!maximumOnly) {
+            const form = forms[1];
+            const add = document.createElement("button");
+            add.type = "button";
+            add.className = "breast-add-measurement";
+            add.textContent = "추가";
+            const list = document.createElement("div");
+            list.style.width = "100%";
+            add.onclick = () => {
+                const row = document.createElement("label");
+                row.className = "finding-size-extra";
+                row.innerHTML = '<input class="phrase-input" type="text" inputmode="decimal" aria-label="추가 크기(cm)"> <span>cm</span>';
+                const input = row.querySelector("input");
+                bindSizeInput(input, form);
+                list.appendChild(row);
+                input.focus();
+            };
+            form.append(add, list);
+        }
+        options.querySelector("[data-size-small]").onclick = () => finishSize({ small: true });
+        submit.onclick = () => {
+            const form = hasSize(activeSizeForm) ? activeSizeForm : (forms.find(hasSize) || activeSizeForm);
+            form.requestSubmit();
+        };
+        options.querySelector("[data-size-close]").onclick = () => finish(null);
+        container.appendChild(options);
+        return sideInput || options.querySelector(".phrase-fields input") || forms[0].querySelector("input");
+    }, !maximumOnly);
+}
+
+async function useItem(i, anchor){
     let x = data[i];
+    const label = String(x.label || "").replace(/\s+/g, "");
+    const liverFinding = displayCategory(x.category) === "복부" && abdominalOrgan(x) === "간" &&
+        (label === "간낭종" || label === "간석회화" || label === "간혈관종");
+    const cystSizeChoice = (x.category === "유방" || x.category === "갑상선") && label === "낭종";
+    const gallbladderSizeChoice = displayCategory(x.category) === "복부" && abdominalOrgan(x) === "담낭" &&
+        (label === "담낭용종" || label === "담석");
+    const thyroidMicrocyst = x.category === "갑상선" && /^(?:양엽[-–－]?)?미세낭종$/.test(label);
+    const carotidPlaque = x.category === "경동맥" && /^동맥경화반[-–－]?양측$/.test(label);
+    const carotidStenosis = x.category === "경동맥" && label === "벽비후및협착";
+    if (thyroidMicrocyst || carotidPlaque) {
+        const selected = await askFindingSize(anchor, x.label,
+            thyroidMicrocyst ? "미세 낭종" : "작은 경화반",
+            ["우측", "좌측", thyroidMicrocyst ? "양엽" : "양측"], thyroidMicrocyst);
+        if (selected === null) return;
+        const { side, small, size } = selected;
+        if (thyroidMicrocyst) {
+            insertResultPhrase("# " + side + "- " + (small ? "미세 낭종" : "낭종(" + size + "cm)"));
+        } else {
+            insertResultPhrase("# " + side + "에 " + (small
+                ? "작은 석회화 동맥 경화반"
+                : "석회화 동맥 경화반(" + size + "cm)"));
+        }
+        return;
+    }
+
+    const kidneySizeChoice = displayCategory(x.category) === "복부" && abdominalOrgan(x) === "신장" &&
+        (label === "신장낭종" || label === "신장석회화");
     let t = x.text;
+    let prompts = x.prompt || [];
+    let enteredSizes;
+
+    if (liverFinding || cystSizeChoice || gallbladderSizeChoice || kidneySizeChoice) {
+        const extra = { choices: [], fields: [], valve: false };
+        if (!liverFinding) {
+            t = t.replace(/\{btn:([^{}]+)\}/g, (token, choices) => {
+                const options = choices.split("|").map(option => option.trim());
+                return options.length === 2 && options.includes("") &&
+                    options.some(option => /^최대\s*[:：]?$/.test(option)) ? "" : token;
+            });
+            if (t.includes("{크기}cm")) {
+                extra.choices = phraseChoices(t);
+                extra.valve = t.includes("{판막선택}");
+                extra.fields = prompts.filter(name => name !== "크기" && (name === "sizes" || t.includes("{" + name + "}")))
+                    .map(name => ({ name, label: name === "sizes" ? "크기 (쉼표로 구분)" : name }));
+            }
+        }
+        const smallLabel = kidneySizeChoice ? (label === "신장낭종" ? "작은 낭종" : "작은 석회화")
+            : x.category === "갑상선" ? "미세 낭종" : undefined;
+        const selected = await askFindingSize(anchor, x.label, smallLabel,
+            [], false, extra.choices.length || extra.fields.length || extra.valve ? extra : undefined);
+        if (selected === null) return;
+        if (liverFinding) {
+            insertResultPhrase(selected.small
+                ? "# 간- 작은 " + label + " 의심"
+                : "# 간- " + label + " 의심(" + selected.size + "cm)");
+            return;
+        }
+
+        const finding = gallbladderSizeChoice || kidneySizeChoice ? x.label.trim() : "낭종";
+        if (gallbladderSizeChoice || kidneySizeChoice) t = t.replace(/최대[ \t]*[:：][ \t]*(?=\{크기\})/g, "");
+        if (!t.includes("{크기}cm")) t = "# " + finding + " 의심({크기}cm)";
+        if (selected.small) {
+            const findingPattern = gallbladderSizeChoice
+                ? (label === "담낭용종" ? /담낭\s*용종/ : /담낭\s*결석|담석/)
+                : label === "신장석회화" && kidneySizeChoice ? /석회화/ : /낭종/;
+            const sizeWord = x.category === "갑상선" ? "미세 " : "작은 ";
+            t = t.replace(findingPattern, match => sizeWord + match)
+                .replace(/ ?\(\{크기\}cm\)/g, "")
+                .replaceAll("{크기}cm-", "")
+                .replaceAll("{크기}cm", "");
+        } else {
+            t = t.replaceAll("{크기}", () => selected.size);
+        }
+        if (selected.details) {
+            t = applyPhraseChoices(t, extra.choices, selected.details, extra.valve);
+            extra.fields.forEach(({name}, index) => {
+                const value = selected.details.values[index];
+                if (name === "sizes") enteredSizes = value;
+                else t = t.replaceAll("{" + name + "}", () => value);
+            });
+        }
+        prompts = enteredSizes === undefined ? [] : ["sizes"];
+    }
 
     t = t.replaceAll("[todaydate]", getTodayDate());
 
-    const btnMatch = t.match(/\{btn:([^}]+)\}/);
-    if(btnMatch) {
-        const options = btnMatch[1].split("|");
-        const selected = await askChoiceModal(options);
-        t = t.replace(btnMatch[0], selected);
+    let choices = phraseChoices(t);
+    let valve = t.includes("{판막선택}");
+    const combineBreastFields = x.category === "유방" &&
+        /저에코결절|^(?:지방소엽|복합낭성병변|피부낭종|C4a)$/i.test(label) &&
+        prompts.length === 2 && prompts.includes("크기") && prompts.includes("위치") &&
+        t.includes("{크기}") && t.includes("{위치}");
+    const ductMeasurements = displayCategory(x.category) === "복부" &&
+        /^간내담관[·ㆍ,/]?총담관확장$/.test(label) && prompts.length === 2 && !prompts.includes("sizes");
+    const bladderMeasurements = x.category === "방광" && label === "정상" &&
+        prompts.some(name => name.replace(/\s+/g, "") === "벽두께") && prompts.includes("용적");
+
+    if (combineBreastFields && !choices.length && !valve) {
+        const measurementPattern = /\{크기\}\s*cm\s*-\s*\{위치\}/gi;
+        const allowMultiple = /저에코결절|^(?:지방소엽|복합낭성병변)$/i.test(label) && !!t.match(measurementPattern);
+        const measurements = await askBreastMeasurements(anchor, allowMultiple);
+        if (measurements === null) return;
+        if (measurements.length > 1) {
+            const list = measurements.map(([size, location]) => size + "cm-" + location).join(", ");
+            t = t.replace(measurementPattern, () => list);
+        } else {
+            const [[size, location]] = measurements;
+            t = t.replaceAll("{크기}", () => size).replaceAll("{위치}", () => location);
+        }
+        prompts = [];
+    } else if (choices.length + Number(valve) + prompts.length > 1) {
+        let fields = prompts.map(name => ({name, label: name === "sizes" ? "크기 (쉼표로 구분)" : name}));
+        let title = x.label + " 입력";
+        if (ductMeasurements) {
+            const names = prompts.includes("크기1") && prompts.includes("크기2") ? ["크기1", "크기2"] : prompts;
+            fields = [{name: names[0], label: "간내담관 크기"}, {name: names[1], label: "총담관 크기"}];
+            title = "담관 크기 입력";
+        } else if (bladderMeasurements) {
+            const thickness = prompts.find(name => name.replace(/\s+/g, "") === "벽두께");
+            fields = [{name: thickness, label: "벽두께"}, {name: "용적", label: "용적"},
+                ...fields.filter(field => field.name !== thickness && field.name !== "용적")];
+            title = "벽두께와 용적 입력";
+        } else if (carotidStenosis) {
+            title = "벽비후 및 협착 입력";
+        }
+        const values = await askPhraseFields(anchor, title, choices, fields, valve);
+        if (values === null) return;
+        t = applyPhraseChoices(t, choices, values, valve);
+        fields.forEach(({name}, index) => {
+            if (name === "sizes") enteredSizes = values.values[index];
+            else t = t.replaceAll("{" + name + "}", () => values.values[index]);
+        });
+        prompts = enteredSizes === undefined ? [] : ["sizes"];
+        choices = [];
+        valve = false;
     }
 
-const valveMatch = t.match(/\{판막선택\}/);
-if (valveMatch) {
-    const options = ["MR", "TR", "AR", "PR"];
-    const selectedItems = [];
-    const modal = document.getElementById("choiceModal");
-    const container = document.getElementById("choiceBtnContainer");
-    const title = document.getElementById("choiceModalTitle");
+    if (choices.length) {
+        const [{token, options}] = choices;
+        const selected = await askChoiceModal(anchor, options);
+        if (selected === null) return;
+        t = t.replace(token, () => selected);
+    }
+    if (valve) {
+        const selected = await askChoiceModal(anchor, VALVE_OPTIONS, true);
+        if (selected === null) return;
+        t = t.replaceAll("{판막선택}", () => selected);
+    }
 
-    container.innerHTML = "";
-    title.textContent = "판막을 선택하세요";
+    if (prompts.includes("sizes")) {
+        const rawInput = enteredSizes ?? await askPhraseInput(anchor, "크기들을 쉼표(,)로 구분하여 입력하세요.\n예: 0.23, 0.29, 0.64");
+        if (rawInput === null) return;
 
-    options.forEach(opt => {
-        const btn = document.createElement("button");
-        btn.textContent = opt;
+        let sizeArray = rawInput.split(',').map(s => s.trim()).filter(s => s.length > 0);
 
-        btn.onclick = () => {
-            const idx = selectedItems.indexOf(opt);
-            if (idx === -1) {
-                selectedItems.push(opt);
-                btn.style.background = "#176b3a";
+        if(sizeArray.length > 0){
+            let numericSizes = sizeArray.map(s => parseFloat(s)).filter(n => !isNaN(n));
+            let maxSize = numericSizes.length > 0 ? Math.max(...numericSizes) : '';
+            let formattedList = sizeArray.map(s => s.endsWith('cm') ? s : s + 'cm').join(', ');
+
+            if (x.category === "자궁" && label === "다발성근종" && sizeArray.length <= 3) {
+                const maxPart = /(?:최대[ \t]*[:：][ \t]*)?\{max\}(?:[ \t]*cm)?/gi;
+                if (t.includes("{sizes}")) {
+                    t = t.replace(/[ \t]*\([ \t]*(?:최대[ \t]*[:：][ \t]*)?\{max\}(?:[ \t]*cm)?[ \t]*\)/gi, "")
+                        .replace(maxPart, "").replace(/\([ \t]*[,;]?[ \t]*\{sizes\}/g, "({sizes}");
+                } else {
+                    t = t.replace(maxPart, () => "{sizes}");
+                }
+                t = t.replaceAll("{sizes}", () => formattedList);
             } else {
-                selectedItems.splice(idx, 1);
-                btn.style.background = "#1f4e78";
-            }
-        };
-        container.appendChild(btn);
-    });
-
-    const done = document.createElement("button");
-    done.textContent = "선택 완료";
-    done.style.background = "#555";
-
-    done.onclick = () => {
-        modal.style.display = "none";
-        t = t.replace("{판막선택}", selectedItems.join(", "));
-        modal.dataset.valveDone = "1";
-        modal.dispatchEvent(new Event("valvedone"));
-    };
-
-    container.appendChild(done);
-    modal.dataset.valveDone = "0";
-    modal.style.display = "block";
-
-    await new Promise(resolve => {
-        modal.addEventListener("valvedone", resolve, { once: true });
-    });
-}
-
-    if(x.prompt){
-        if(x.prompt.includes("sizes")){
-            let rawInput = prompt("크기들을 쉼표(,)로 구분하여 입력하세요.\n예: 0.23, 0.29, 0.64");
-            if(rawInput === null) return;
-
-            let sizeArray = rawInput.split(',').map(s => s.trim()).filter(s => s.length > 0);
-
-            if(sizeArray.length > 0){
-                let numericSizes = sizeArray.map(s => parseFloat(s)).filter(n => !isNaN(n));
-                let maxSize = numericSizes.length > 0 ? Math.max(...numericSizes) : '';
-                let formattedList = sizeArray.map(s => s.endsWith('cm') ? s : s + 'cm').join(', ');
-
                 t = t.replaceAll("{max}", maxSize).replaceAll("{sizes}", formattedList);
-            } else {
-                t = t.replaceAll("{max}", "").replaceAll("{sizes}", "");
             }
         } else {
-            for(const p of x.prompt){
-                let v = prompt(p + " 입력");
-                if(v === null) return;
-                t = t.replaceAll("{" + p + "}", v);
-            }
+            t = t.replaceAll("{max}", "").replaceAll("{sizes}", "");
         }
+    } else if (prompts.length) {
+        const [name] = prompts;
+        const value = await askPhraseInput(anchor, name + " 입력", isSizeInputLabel(name));
+        if (value === null) return;
+        t = t.replaceAll("{" + name + "}", () => value);
     }
 
+    if (x.category === "갑상선") t = t.replaceAll("(C2)", "");
+
+    const uterusStatus = x.category === "자궁" && label === "폐경,월경";
+    const appendInline = uterusStatus || (x.category === "변화" && /^(?:NEW|큰변화없음|변화없음)$/i.test(label));
+    const blankLineBefore = displayCategory(x.category) === "복부" && /^(?:특이사항없음|erectedliver)$/i.test(label);
+    insertResultPhrase(t, appendInline, blankLineBefore, uterusStatus ? "<자궁 난소 초음파>" : "");
+}
+
+function insertResultPhrase(t, appendInline = false, blankLineBefore = false, inlineTitle = ""){
     let r = document.getElementById("result");
+    if (appendInline) {
+        const titleIndex = inlineTitle ? r.value.lastIndexOf(inlineTitle) : -1;
+        const cursor = titleIndex >= 0 ? titleIndex + inlineTitle.length : (r.selectionEnd ?? r.value.length);
+        const nextBreak = r.value.indexOf("\n", cursor);
+        const lineEnd = nextBreak === -1 ? r.value.length : nextBreak;
+        const prefix = r.value.slice(0, lineEnd).trimEnd();
+        const status = t.trim().replace(/\s*\n\s*/g, " ");
+        if (!status) return;
+        const added = (prefix ? " " : "") + status;
+        r.setRangeText(added, prefix.length, prefix.length, "end");
+        r.focus();
+        navigator.clipboard.writeText(status);
+        return;
+    }
+
+    if (blankLineBefore) {
+        const start = r.selectionStart ?? r.value.length;
+        const prefix = r.value.slice(0, start);
+        const trailingBreaks = prefix.match(/(?:\n[ \t]*)+$/)?.[0] || "";
+        const leadingBreaks = t.match(/^(?:[ \t]*\n)+/)?.[0] || "";
+        const breakCount = (trailingBreaks + leadingBreaks).split("\n").length - 1;
+        if (prefix.trim()) t = "\n".repeat(Math.max(0, 2 - breakCount)) + t;
+    }
+
     let startPos = r.selectionStart;
     let endPos = r.selectionEnd;
 
@@ -746,7 +1296,7 @@ if (valveMatch) {
         let prefix = r.value.substring(0, startPos);
         let suffix = r.value.substring(endPos, r.value.length);
 
-        if(prefix.length > 0 && !prefix.endsWith("\n")){
+        if(prefix.length > 0 && !prefix.endsWith("\n") && (!blankLineBefore || !t.startsWith("\n"))){
             prefix += "\n";
         }
         if(suffix.length > 0 && !suffix.startsWith("\n")){
@@ -755,7 +1305,7 @@ if (valveMatch) {
 
         r.value = prefix + t + suffix;
     } else {
-        r.value += (r.value ? "\n" : "") + t;
+        r.value += (r.value && (!blankLineBefore || r.value.trim() && !r.value.endsWith("\n") && !t.startsWith("\n")) ? "\n" : "") + t;
     }
 
     reformatNumbers();
@@ -765,8 +1315,8 @@ if (valveMatch) {
 
 function copyResult(){navigator.clipboard.writeText(document.getElementById("result").value)}
 function clearResult(){document.getElementById("result").value=""}
-function addLine(){
-    let s=prompt("직접 입력할 문구 (# 또는 @를 붙이면 자동 번호 생성)");
+async function addLine(anchor){
+    const s = await askPhraseInput(anchor, "직접 입력할 문구 (# 또는 @를 붙이면 자동 번호 생성)");
     if(s){
         let r=document.getElementById("result");
         r.value+=(r.value?"\n":"")+s;
@@ -792,21 +1342,21 @@ function renderTable(){
     const cats = ["전체", ...getOrderedCategories(data)];
     
     filterBox.innerHTML = cats.map(c => {
-        let count = (c === "전체") ? data.length : data.filter(x => x.category === c).length;
+        let count = (c === "전체") ? data.length : data.filter(x => displayCategory(x.category) === c).length;
         return `<button type="button" class="${c === adminCategoryFilter ? 'active' : ''}" onclick="filterAdminCat('${esc(c)}')">${esc(c)} (${count})</button>`;
     }).join("");
 
     const tbody = document.getElementById("phraseRows");
     let html = "";
     data.forEach((x, i) => {
-        if(adminCategoryFilter !== "전체" && x.category !== adminCategoryFilter) return;
+        if(adminCategoryFilter !== "전체" && displayCategory(x.category) !== adminCategoryFilter) return;
         
         html += `
         <tr data-i="${i}">
             <td><input data-k="category" value="${esc(x.category||"")}"></td>
             <td><input data-k="group" value="${esc(x.group||"")}"></td>
             <td><input data-k="label" value="${esc(x.label||"")}"></td>
-            <td><textarea data-k="text">${esc(x.text||"")}</textarea></td>
+            <td><textarea data-k="text"></textarea></td>
             <td><input data-k="prompt" value="${esc((x.prompt||[]).join(", "))}" placeholder="크기, 위치 또는 sizes"></td>
             <td style="text-align:center">
                 <button class="movebtn" type="button" onclick="moveItem(${i}, -1)">▲</button>
@@ -816,6 +1366,9 @@ function renderTable(){
         </tr>`;
     });
     tbody.innerHTML = html;
+    tbody.querySelectorAll("tr[data-i]").forEach(row => {
+        row.querySelector('textarea[data-k="text"]').value = data[row.dataset.i].text || "";
+    });
 }
 
 function readTable(){
@@ -827,6 +1380,7 @@ function readTable(){
         tr.querySelectorAll("[data-k]").forEach(el => o[el.dataset.k] = el.value);
         o.prompt = o.prompt ? o.prompt.split(",").map(v => v.trim()).filter(Boolean) : [];
         if(!o.prompt.length) delete o.prompt;
+        if (newPhrases.has(data[i])) newPhrases.add(o);
         newData[i] = o;
     });
     return newData;
@@ -845,7 +1399,7 @@ function moveItem(index, direction){
     } else {
         const filteredIndices = [];
         data.forEach((x, idx) => {
-            if (x.category === adminCategoryFilter) filteredIndices.push(idx);
+            if (displayCategory(x.category) === adminCategoryFilter) filteredIndices.push(idx);
         });
 
         const currentFilteredPos = filteredIndices.indexOf(index);
@@ -862,12 +1416,30 @@ function moveItem(index, direction){
     renderTable();
 }
 
+function placeNewPhrases(items) {
+    const ordered = items.filter(item => !newPhrases.has(item));
+    for (const item of items.filter(item => newPhrases.has(item))) {
+        const category = displayCategory(item.category);
+        const group = (item.group || "").trim();
+        const inCategory = other => displayCategory(other.category) === category;
+        const matchingGroup = ordered.findLastIndex(other => inCategory(other) && (other.group || "").trim() === group);
+        const anchor = matchingGroup >= 0 ? matchingGroup : ordered.findLastIndex(inCategory);
+        ordered.splice(anchor >= 0 ? anchor + 1 : ordered.length, 0, item);
+    }
+    return ordered;
+}
+
 async function saveTable(){
-    data = readTable();
-    await saveTableToFirestore(); 
-    render();
-    document.getElementById("saveMsg").textContent="클라우드 저장 완료!";
-    setTimeout(()=>document.getElementById("saveMsg").textContent="",1500)
+    data = placeNewPhrases(readTable());
+    const savedRows = data;
+    renderTable();
+    const saved = await saveTableToFirestore();
+    if (saved) {
+        savedRows.forEach(item => newPhrases.delete(item));
+        render();
+    }
+    document.getElementById("saveMsg").textContent = saved ? "클라우드 저장 완료!" : "저장 실패. 다시 시도해 주세요.";
+    setTimeout(() => document.getElementById("saveMsg").textContent = "", 1500);
 }
   
 function deleteItem(i){
@@ -881,7 +1453,9 @@ function deleteItem(i){
 function newItem(){
     data = readTable();
     let defaultCat = (adminCategoryFilter !== "전체") ? adminCategoryFilter : "복부";
-    data.push({category: defaultCat, group: "", label: "", text: ""});
+    const item = {category: defaultCat, group: "", label: "", text: ""};
+    newPhrases.add(item);
+    data.push(item);
     renderTable();
     setTimeout(() => {
         const box = document.getElementById("phraseTableWrap");
@@ -915,6 +1489,9 @@ function setupSplitter(id,leftId,rightId){
 }
 
 function initApp(){
+    document.getElementById("organNav").innerHTML = ABDOMINAL_ORGANS.map((organ, index) =>
+        `<button type="button" onclick="jumpToOrgan(${index})">${organ}</button>`
+    ).join("");
     loadLayout();
     setupSplitter("split1","paneCat","paneMid");
     setupSplitter("split2","paneMid","paneResult");
