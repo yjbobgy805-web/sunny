@@ -632,7 +632,7 @@ function render(){
         <div class="cat ${c===currentCategory && !q ? 'active' : ''}" onclick="selectCat('${esc(c)}')">${esc(c)}</div>
     `).join("");
 
-    let items=data.filter(x=>(!q?displayCategory(x.category)===currentCategory:true)&&(!q||(x.label+x.text+x.group+x.category).toLowerCase().includes(q)));
+    let items=data.filter(x=>String(x.label || "").trim() !== "소견" && (!q?displayCategory(x.category)===currentCategory:true)&&(!q||(x.label+x.text+x.group+x.category).toLowerCase().includes(q)));
     document.getElementById("middleTitle").textContent=q?"검색 결과":currentCategory+" 문구";
     const itemList = document.getElementById("items");
     const organNav = document.getElementById("organNav");
@@ -676,15 +676,12 @@ function selectCat(c){
     currentCategory = c;
     document.getElementById("search").value = "";
 
-    const examName = EXAM_TITLE_NAMES.get(c);
-    if (examName) {
-        const result = document.getElementById("result");
-        const separator = result.value && !result.value.endsWith("\n") ? "\n" : "";
-        result.value += separator + ",           <" + examName + " 초음파>";
-        result.scrollTop = result.scrollHeight;
-    }
-
     render();
+}
+
+function examTitle(category) {
+    const examName = EXAM_TITLE_NAMES.get(displayCategory(category));
+    return examName ? "<" + examName + " 초음파>" : "";
 }
 
 function getTodayDate(){
@@ -974,7 +971,7 @@ function askPhraseFields(anchor, title, choices, fields, valve) {
     });
 }
 
-function askFindingSize(anchor, label, smallLabel = "작은 크기", sides = [], maximumOnly = false, extra) {
+function askFindingSize(anchor, label, smallLabel = "작은 크기", sides = [], maximumOnly = false, extra, autoAdvance = true) {
     return askPhraseModal(anchor, label + " 크기 선택", (container, finish) => {
         const options = document.createElement("div");
         options.className = "finding-size-options";
@@ -1010,6 +1007,7 @@ function askFindingSize(anchor, label, smallLabel = "작은 크기", sides = [],
         const submit = options.querySelector("[data-size-submit]");
         const bindSizeInput = (input, form) => {
             input.addEventListener("focus", () => { activeSizeForm = form; });
+            if (!autoAdvance) return;
             advanceAfterSize(input, () => {
                 const inputs = [...options.querySelectorAll("input.phrase-input")];
                 return inputs[inputs.indexOf(input) + 1] || submit;
@@ -1074,6 +1072,10 @@ function askFindingSize(anchor, label, smallLabel = "작은 크기", sides = [],
 async function useItem(i, anchor){
     let x = data[i];
     const label = String(x.label || "").replace(/\s+/g, "");
+    if (label === "소견") return;
+    const insertItemPhrase = (phrase, inline, blankLine, inlineTitle) =>
+        insertResultPhrase(phrase, inline, blankLine, inlineTitle, examTitle(x.category));
+
     const liverFinding = displayCategory(x.category) === "복부" && abdominalOrgan(x) === "간" &&
         (label === "간낭종" || label === "간석회화" || label === "간혈관종");
     const cystSizeChoice = (x.category === "유방" || x.category === "갑상선") && label === "낭종";
@@ -1089,11 +1091,20 @@ async function useItem(i, anchor){
         if (selected === null) return;
         const { side, small, size } = selected;
         if (thyroidMicrocyst) {
-            insertResultPhrase("# " + side + "- " + (small ? "미세 낭종" : "낭종(" + size + "cm)"));
+            insertItemPhrase("# " + side + "- " + (small ? "미세 낭종" : "낭종(" + size + "cm)"));
+        } else if (small) {
+            insertItemPhrase("# " + side + "에 작은 석회화 동맥 경화반");
         } else {
-            insertResultPhrase("# " + side + "에 " + (small
-                ? "작은 석회화 동맥 경화반"
-                : "석회화 동맥 경화반(" + size + "cm)"));
+            const maximum = size.startsWith("최대:");
+            const template = x.text && x.text.includes("{크기}") && x.text.includes("{btn:")
+                ? x.text : "# 석회화 동맥 경화반 : 최대- {btn:우측|좌측|양측} {크기}cm";
+            const maxMarker = /최대[ \t]*[:：-][ \t]*(?=\{btn:|\{크기\})/g;
+            const hasMaxMarker = /최대[ \t]*[:：-][ \t]*(?=\{btn:|\{크기\})/.test(template);
+            const value = hasMaxMarker || !maximum ? size.replace(/^최대:/, "") : size;
+            const phrase = (maximum ? template : template.replace(maxMarker, ""))
+                .replace(/\{btn:[^{}]+\}/, () => side)
+                .replaceAll("{크기}", () => value);
+            insertItemPhrase(phrase);
         }
         return;
     }
@@ -1122,10 +1133,10 @@ async function useItem(i, anchor){
         const smallLabel = kidneySizeChoice ? (label === "신장낭종" ? "작은 낭종" : "작은 석회화")
             : x.category === "갑상선" ? "미세 낭종" : undefined;
         const selected = await askFindingSize(anchor, x.label, smallLabel,
-            [], false, extra.choices.length || extra.fields.length || extra.valve ? extra : undefined);
+            [], false, extra.choices.length || extra.fields.length || extra.valve ? extra : undefined, label !== "간낭종");
         if (selected === null) return;
         if (liverFinding) {
-            insertResultPhrase(selected.small
+            insertItemPhrase(selected.small
                 ? "# 간- 작은 " + label + " 의심"
                 : "# 간- " + label + " 의심(" + selected.size + "cm)");
             return;
@@ -1233,7 +1244,9 @@ async function useItem(i, anchor){
             let maxSize = numericSizes.length > 0 ? Math.max(...numericSizes) : '';
             let formattedList = sizeArray.map(s => s.endsWith('cm') ? s : s + 'cm').join(', ');
 
-            if (x.category === "자궁" && label === "다발성근종" && sizeArray.length <= 3) {
+            const listSmallMeasurements = (x.category === "자궁" && /^(?:다발성)?(?:자궁)?근종$/.test(label)) ||
+                (x.category === "갑상선" && label.includes("복합에코"));
+            if (listSmallMeasurements && sizeArray.length <= 3) {
                 const maxPart = /(?:최대[ \t]*[:：][ \t]*)?\{max\}(?:[ \t]*cm)?/gi;
                 if (t.includes("{sizes}")) {
                     t = t.replace(/[ \t]*\([ \t]*(?:최대[ \t]*[:：][ \t]*)?\{max\}(?:[ \t]*cm)?[ \t]*\)/gi, "")
@@ -1241,7 +1254,7 @@ async function useItem(i, anchor){
                 } else {
                     t = t.replace(maxPart, () => "{sizes}");
                 }
-                t = t.replaceAll("{sizes}", () => formattedList);
+                t = t.replace(/최대[ 	]*[:：][ 	]*(?={sizes})/g, "").replaceAll("{sizes}", () => formattedList);
             } else {
                 t = t.replaceAll("{max}", maxSize).replaceAll("{sizes}", formattedList);
             }
@@ -1260,11 +1273,17 @@ async function useItem(i, anchor){
     const uterusStatus = x.category === "자궁" && label === "폐경,월경";
     const appendInline = uterusStatus || (x.category === "변화" && /^(?:NEW|큰변화없음|변화없음)$/i.test(label));
     const blankLineBefore = displayCategory(x.category) === "복부" && /^(?:특이사항없음|erectedliver)$/i.test(label);
-    insertResultPhrase(t, appendInline, blankLineBefore, uterusStatus ? "<자궁 난소 초음파>" : "");
+    insertItemPhrase(t, appendInline, blankLineBefore, uterusStatus ? "<자궁 난소 초음파>" : "");
 }
 
-function insertResultPhrase(t, appendInline = false, blankLineBefore = false, inlineTitle = ""){
+function insertResultPhrase(t, appendInline = false, blankLineBefore = false, inlineTitle = "", title = ""){
     let r = document.getElementById("result");
+    if (title && t.trim() && !r.value.includes(title) && !t.includes(title)) {
+        const separator = appendInline ? " " : blankLineBefore ? "\n\n" : "\n";
+        t = ",           " + title + separator + (appendInline || blankLineBefore ? t.trimStart() : t);
+        appendInline = false;
+        blankLineBefore = false;
+    }
     if (appendInline) {
         const titleIndex = inlineTitle ? r.value.lastIndexOf(inlineTitle) : -1;
         const cursor = titleIndex >= 0 ? titleIndex + inlineTitle.length : (r.selectionEnd ?? r.value.length);
